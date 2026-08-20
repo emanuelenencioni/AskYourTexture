@@ -79,13 +79,12 @@ int main(){
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	unsigned int VBO;
-	glGenBuffers(1, &VBO);
+	
 	
 
 // ----- STUFF IN THE SCENE -----
 
-float vertices[] = {
+float vertices[] = { // CUBE
     // +Z red — normal (0,0,1)
      0.6f,  0.6f,  0.6f,  1,0,0,  0,0,1,
      0.6f, -0.6f,  0.6f,  1,0,0,  0,0,1,
@@ -134,9 +133,8 @@ float vertices[] = {
      0.6f, -0.6f, -0.6f,  1,0,1,  0,-1,0,
     -0.6f, -0.6f, -0.6f,  1,0,1,  0,-1,0,
 };
-
-
-
+	unsigned int VBO;
+	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -155,7 +153,7 @@ float vertices[] = {
 	glEnableVertexAttribArray(2);
 
 
-float floorVertices[] = {
+float floorVertices[] = { // FLOOR
     // normal (0,1,0) — gray
     -4.0f, -1.2f, -4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,
      4.0f, -1.2f, -4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,
@@ -164,6 +162,24 @@ float floorVertices[] = {
     -4.0f, -1.2f,  4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,
      4.0f, -1.2f,  4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,
 };
+	unsigned int VBOFloor;
+	glGenBuffers(1, &VBOFloor);
+	glBindBuffer(GL_ARRAY_BUFFER, VBOFloor);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(floorVertices), floorVertices, GL_STATIC_DRAW);
+	
+	unsigned int VAOFloor;
+	glGenVertexArrays(1, &VAOFloor);
+	glBindVertexArray(VAOFloor); 
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (void*)12);
+	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (void*)24);
+	glEnableVertexAttribArray(2);
 
 
 	float window_x_size = 1280;
@@ -176,7 +192,7 @@ float floorVertices[] = {
 	//rotation data
 	float m[16];
 	float fov = M_PI/3;
-	float elev = -M_PI/6;
+	float elev = M_PI/6;
 	float transform[16];
 	float view[16] = {0}; view[0]=1; view[5]=1; view[10]=1; view[15]=1;
 	float projection[16];
@@ -236,10 +252,12 @@ float floorVertices[] = {
 	// ----- LIGHT CALCULATION -----
 		glUniform3fv(lightLoc, 1, lightPos); 
 		
-		
-		
-		
 		glDrawArrays(GL_TRIANGLES, 0, 36); // REMEMBER TO UPDATE THIS TO THE ACTUAL NUMBER OF VERTICES.
+		
+		
+		glBindVertexArray(VAOFloor);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
