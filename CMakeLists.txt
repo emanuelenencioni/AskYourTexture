@@ -10,6 +10,7 @@ find_package(glfw3 REQUIRED)
 add_executable(AskYourTexture
     src/main.cpp
     src/glad.c
+    src/cube.cpp
 )
 
 target_include_directories(AskYourTexture PRIVATE include)

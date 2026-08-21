@@ -2,6 +2,9 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <math.h>
+#include <vector>
+
+#include "cube.hpp"
 
 void perspective(float* m, float fovRadians, float aspect, float near, float far);
 //just an helper
@@ -84,73 +87,9 @@ int main(){
 
 // ----- STUFF IN THE SCENE -----
 
-float vertices[] = { // CUBE
-    // +Z red — normal (0,0,1)
-     0.6f,  0.6f,  0.6f,  1,0,0,  0,0,1,
-     0.6f, -0.6f,  0.6f,  1,0,0,  0,0,1,
-    -0.6f, -0.6f,  0.6f,  1,0,0,  0,0,1,
-     0.6f,  0.6f,  0.6f,  1,0,0,  0,0,1,
-    -0.6f,  0.6f,  0.6f,  1,0,0,  0,0,1,
-    -0.6f, -0.6f,  0.6f,  1,0,0,  0,0,1,
-
-    // -Z face — normal (0,0,-1)
-    -0.6f,  0.6f, -0.6f,  0,1,0,  0,0,-1,
-    -0.6f, -0.6f, -0.6f,  0,1,0,  0,0,-1,
-     0.6f, -0.6f, -0.6f,  0,1,0,  0,0,-1,
-    -0.6f,  0.6f, -0.6f,  0,1,0,  0,0,-1,
-     0.6f,  0.6f, -0.6f,  0,1,0,  0,0,-1,
-     0.6f, -0.6f, -0.6f,  0,1,0,  0,0,-1,
-
-    // -X face — normal (-1,0,0)
-    -0.6f,  0.6f,  0.6f,  0,0,1,  -1,0,0,
-    -0.6f, -0.6f, -0.6f,  0,0,1,  -1,0,0,
-    -0.6f, -0.6f,  0.6f,  0,0,1,  -1,0,0,
-    -0.6f,  0.6f,  0.6f,  0,0,1,  -1,0,0,
-    -0.6f,  0.6f, -0.6f,  0,0,1,  -1,0,0,
-    -0.6f, -0.6f, -0.6f,  0,0,1,  -1,0,0,
-
-    // +X face — normal (1,0,0)
-     0.6f,  0.6f,  0.6f,  1,1,0,  1,0,0,
-     0.6f, -0.6f, -0.6f,  1,1,0,  1,0,0,
-     0.6f, -0.6f,  0.6f,  1,1,0,  1,0,0,
-     0.6f,  0.6f,  0.6f,  1,1,0,  1,0,0,
-     0.6f,  0.6f, -0.6f,  1,1,0,  1,0,0,
-     0.6f, -0.6f, -0.6f,  1,1,0,  1,0,0,
-
-    // +Y face — normal (0,1,0)
-     0.6f,  0.6f,  0.6f,  0,1,1,  0,1,0,
-    -0.6f,  0.6f, -0.6f,  0,1,1,  0,1,0,
-    -0.6f,  0.6f,  0.6f,  0,1,1,  0,1,0,
-     0.6f,  0.6f,  0.6f,  0,1,1,  0,1,0,
-     0.6f,  0.6f, -0.6f,  0,1,1,  0,1,0,
-    -0.6f,  0.6f, -0.6f,  0,1,1,  0,1,0,
-
-    // -Y face — normal (0,-1,0)
-     0.6f, -0.6f,  0.6f,  1,0,1,  0,-1,0,
-    -0.6f, -0.6f, -0.6f,  1,0,1,  0,-1,0,
-    -0.6f, -0.6f,  0.6f,  1,0,1,  0,-1,0,
-     0.6f, -0.6f,  0.6f,  1,0,1,  0,-1,0,
-     0.6f, -0.6f, -0.6f,  1,0,1,  0,-1,0,
-    -0.6f, -0.6f, -0.6f,  1,0,1,  0,-1,0,
-};
-	unsigned int VBO;
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	
-	unsigned int VAO;
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO); 
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (void*)12);
-	glEnableVertexAttribArray(1);
-
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (void*)24);
-	glEnableVertexAttribArray(2);
+// CUBE now has a class
+Cube cube;
+cube.setupGL();
 
 
 float floorVertices[] = { // FLOOR
@@ -192,7 +131,7 @@ float floorVertices[] = { // FLOOR
 	//rotation data
 	float m[16];
 	float fov = M_PI/3;
-	float elev = M_PI/6;
+	float elev = -10*M_PI/180;//M_PI/6;
 	float transform[16];
 	float view[16] = {0}; view[0]=1; view[5]=1; view[10]=1; view[15]=1;
 	float projection[16];
@@ -215,8 +154,6 @@ float floorVertices[] = { // FLOOR
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(shaderProgram);
-		glBindVertexArray(VAO);
-
 	//  ----- ORBITING VIEW CALCULATION -----
 		float t = glfwGetTime();
 		//camera orbiting
@@ -249,11 +186,10 @@ float floorVertices[] = { // FLOOR
 		mult4x4(transform, projection, view);
 	
 		glUniformMatrix4fv(loc, 1, GL_FALSE, transform);
+
+		cube.draw();
 	// ----- LIGHT CALCULATION -----
-		glUniform3fv(lightLoc, 1, lightPos); 
-		
-		glDrawArrays(GL_TRIANGLES, 0, 36); // REMEMBER TO UPDATE THIS TO THE ACTUAL NUMBER OF VERTICES.
-		
+		glUniform3fv(lightLoc, 1, lightPos); 		
 		
 		glBindVertexArray(VAOFloor);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
