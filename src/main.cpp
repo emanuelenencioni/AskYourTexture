@@ -205,7 +205,7 @@ float floorVertices[] = { // FLOOR
 
 
 void perspective(float* m, float fovRadians, float aspect, float near, float far) {
-	
+	for(int i=0; i<16; i++) m[i] = 0.0f;
 	m[0] = 1/(aspect * tan(fovRadians/2));     // scale X
 	m[5] = 1/tan(fovRadians/2);                // scale Y
 	m[10]= (far+near)/(near-far);       // maps z
