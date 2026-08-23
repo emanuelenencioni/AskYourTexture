@@ -68,6 +68,7 @@ void Cube::setupGL() {
     glEnableVertexAttribArray(2);
 
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);   
 }
 
 
@@ -79,6 +80,15 @@ Cube::~Cube() {
 void Cube::draw() const {
     glBindVertexArray(VAO_);
     glDrawArrays(GL_TRIANGLES, 0, vertexCount());
+}
+
+std::vector<float> Cube::getCorners() const {
+    std::vector<float> v;
+    v.reserve(8*3);
+    for (int i = 0; i < 8; ++i)
+        for (int j = 0; j < 3; ++j)
+            v.push_back(corners_[i][j]);
+    return v;
 }
 
 void Cube::tris_from_exact_position() {

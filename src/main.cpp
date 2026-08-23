@@ -3,8 +3,11 @@
 #include <iostream>
 #include <math.h>
 #include <vector>
+#include <thread>
+#include <chrono>
 
 #include "cube.hpp"
+#include "shadow.hpp"
 
 void perspective(float* m, float fovRadians, float aspect, float near, float far);
 //just an helper
@@ -12,13 +15,16 @@ void mult4x4(float* out, const float* a, const float* b);
 void normalize(float v[3]);
 
 int main(){
+	float window_x_size = 1280;
+	float window_y_size = 720;
+
 	glfwInit();
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* window = glfwCreateWindow(800,600, "hello world", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(window_x_size,window_y_size, "AskYourTexture", NULL, NULL);
 	if (window == NULL){
 		std::cout<<"Failed creating window";
 		glfwTerminate();
@@ -119,12 +125,15 @@ float floorVertices[] = { // FLOOR
 
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (void*)24);
 	glEnableVertexAttribArray(2);
+	
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);   
 
 
-	float window_x_size = 1280;
-	float window_y_size = 720;
 
 	glViewport(0,0,window_x_size,window_y_size);
+	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
+
 	glEnable(GL_DEPTH_TEST);
 
 	float aspect_ratio = window_x_size / window_y_size;
@@ -147,7 +156,11 @@ float floorVertices[] = { // FLOOR
 	// light source!
 	float lightPos[3] = {5.0f, 5.0f, 5.0f};
 	GLint lightLoc = glGetUniformLocation(shaderProgram, "lightPos");
-	
+
+	// shadows!
+	Shadow shad(cube.getCorners(), lightPos, floorVertices[1]);
+
+	shad.setupGL();
 	// loop
 	while(!glfwWindowShouldClose(window)){
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -186,13 +199,18 @@ float floorVertices[] = { // FLOOR
 		mult4x4(transform, projection, view);
 	
 		glUniformMatrix4fv(loc, 1, GL_FALSE, transform);
+		glUniform3fv(lightLoc, 1, lightPos); 	
 
-		cube.draw();
-	// ----- LIGHT CALCULATION -----
-		glUniform3fv(lightLoc, 1, lightPos); 		
-		
+		shad.update();
+		//draw floor
 		glBindVertexArray(VAOFloor);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
+		shad.draw();
+		cube.draw();
+	// ----- LIGHT CALCULATION -----
+		
+		
 		
 		glfwSwapBuffers(window);
 		glfwPollEvents();

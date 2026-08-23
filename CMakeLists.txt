@@ -11,6 +11,7 @@ add_executable(AskYourTexture
     src/main.cpp
     src/glad.c
     src/cube.cpp
+    src/shadow.cpp
 )
 
 target_include_directories(AskYourTexture PRIVATE include)
