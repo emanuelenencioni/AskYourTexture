@@ -32,7 +32,9 @@ void Shadow::setupGL() {
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);   
 }                
-void Shadow::update() {
+void Shadow::update(const float  lightPos[3]) {
+    for(int i=0; i<3; i++) this->lightPos[i] = lightPos[i];
+
     hullVertices.clear(); 
     projectToFloor();
     grahamScan();

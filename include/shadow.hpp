@@ -11,7 +11,7 @@ class Shadow {
     public:
         Shadow(const std::vector<float>& points, const float lightPos[3], float floorY);
         void setupGL();                
-        void update();                
+        void update(const float lightPos[3]);                
         void draw();              
     private:
         void projectToFloor();          

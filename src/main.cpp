@@ -9,6 +9,12 @@
 #include "cube.hpp"
 #include "shadow.hpp"
 
+
+#define ROTATING_SUN 0
+#define ROTATING_CAM 1
+
+
+
 void perspective(float* m, float fovRadians, float aspect, float near, float far);
 //just an helper
 void mult4x4(float* out, const float* a, const float* b);
@@ -135,26 +141,34 @@ float floorVertices[] = { // FLOOR
 	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 
 	glEnable(GL_DEPTH_TEST);
-
+	
 	float aspect_ratio = window_x_size / window_y_size;
 	//rotation data
 	float m[16];
 	float fov = M_PI/3;
-	float elev = -10*M_PI/180;//M_PI/6;
+	float elev = 10*M_PI/180;//M_PI/6;
 	float transform[16];
 	float view[16] = {0}; view[0]=1; view[5]=1; view[10]=1; view[15]=1;
 	float projection[16];
 	perspective(projection,fov,aspect_ratio,0.1, 100);
-	float R = 5.0f;
+	float R = 8.0f;
 	float target[3] = {0};
 	float f[3];
 	float r[3];
 	float up[3] = {0,1,0};
 	float s[3];
 	GLint loc = glGetUniformLocation(shaderProgram, "transform");
+	
+	float eye[3] = { 
+			R*cos(0)*cos(elev), 
+			R*sin(elev), 
+			R*sin(0)*cos(elev)
+	};
 
 	// light source!
 	float lightPos[3] = {5.0f, 5.0f, 5.0f};
+	float R_light = 5.0f;
+	float speed = 0.3;
 	GLint lightLoc = glGetUniformLocation(shaderProgram, "lightPos");
 
 	// shadows!
@@ -167,14 +181,16 @@ float floorVertices[] = { // FLOOR
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(shaderProgram);
-	//  ----- ORBITING VIEW CALCULATION -----
+
 		float t = glfwGetTime();
+	//  ----- ORBITING VIEW CALCULATION -----
+		
 		//camera orbiting
-		float eye[3] = { 
-			R*cos(t)*cos(elev), 
-			R*sin(elev), 
-			R*sin(t)*cos(elev)
-		};
+		if(ROTATING_CAM) {
+			eye[0] = R*cos(t)*cos(elev);
+			eye[1] = R*sin(elev);
+			eye[0] = R*sin(t)*cos(elev);
+		}
 
 		f[0] = -eye[0]; f[1] =  -eye[1]; f[2] = -eye[2]; 
 		normalize(f);
@@ -195,13 +211,19 @@ float floorVertices[] = { // FLOOR
 		view[12] = -( r[0]*eye[0] + r[1]*eye[1] + r[2]*eye[2] );   // -dot(r, eye)
 		view[13] = -( s[0]*eye[0] + s[1]*eye[1] + s[2]*eye[2] );   // -dot(s, eye)
 		view[14] =  ( f[0]*eye[0] + f[1]*eye[1] + f[2]*eye[2] );   // +dot(f, eye)
+
+	// ----- ORBITING SUN CALCULATION -----
+		if(ROTATING_SUN){
+			lightPos[0] = R_light * cos(speed * t);
+			lightPos[1] = R_light * sin(speed*t);
+		}
 		
 		mult4x4(transform, projection, view);
 	
 		glUniformMatrix4fv(loc, 1, GL_FALSE, transform);
 		glUniform3fv(lightLoc, 1, lightPos); 	
 
-		shad.update();
+		shad.update(lightPos);
 		//draw floor
 		glBindVertexArray(VAOFloor);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
