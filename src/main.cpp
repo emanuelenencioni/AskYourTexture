@@ -44,33 +44,40 @@ int main(){
 
 	const char* vertexShaderSource = R"(
 	#version 330 core
-	
-	uniform mat4 transform; // for the camera rotation
 
 	layout (location = 0) in vec3 aPos; // posizione in ingresso letteralmente "in"
 	layout (location = 1) in vec3 aColor;
 	layout (location = 2) in vec3 aNormal;
-	uniform vec3 lightPos;
-	out float ourBrightness; 
-	out vec3 ourColor;
 
+	uniform mat4 transform; // for the camera rotation
+
+	out vec3 ourColor;
+	out vec3 worldPos;
+	out vec3 worldNormal; 
 	void main()
 	{
-		gl_Position = transform * vec4(aPos.x, aPos.y, aPos.z, 1.0f);   // coord. omogenee.
-		ourBrightness =0.3 + 0.7*max(dot(aNormal, normalize(lightPos-aPos)), 0.0);
+		gl_Position = transform * vec4(aPos, 1.0f);   // coord. omogenee.
 		ourColor = aColor;
+		worldPos = aPos;
+		worldNormal = aNormal;
 	}
 	)";
 
 	const char* fragmentShaderSource = R"(
-	
 	#version 330 core
+
 	in vec3 ourColor;
-	in float ourBrightness;
-	
+	in vec3 worldPos;
+	in vec3 worldNormal;
+
+	uniform vec3 lightPos;
+
 	out vec4 FragColor; // vettore di output = colore
 	void main() {
-		FragColor = vec4(ourColor * ourBrightness, 1.0);  
+		vec3 n = normalize(worldNormal);
+		vec3 l = normalize(lightPos - worldPos);
+		float brightness = 0.3 + 0.7*max(dot(n, l), 0.0);
+		FragColor = vec4(ourColor * brightness, 1.0);  
 	})";
 
 	// creazione shaders
