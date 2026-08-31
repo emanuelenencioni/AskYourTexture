@@ -8,6 +8,10 @@
 
 #include "cube.hpp"
 #include "shadow.hpp"
+#include "stb_image.h"
+#include "shaders.hpp"
+#include "math_utils.hpp"
+#include "camera.hpp"
 
 
 #define ROTATING_SUN 0
@@ -18,7 +22,11 @@
 void perspective(float* m, float fovRadians, float aspect, float near, float far);
 //just an helper
 void mult4x4(float* out, const float* a, const float* b);
-void normalize(float v[3]);
+
+int loadTexture(const std::string path);
+unsigned int generateProgram(const char** vertexShader,const char** fragmentShader);
+
+bool checkShader(unsigned int shader);
 
 int main(){
 	float window_x_size = 1280;
@@ -29,6 +37,7 @@ int main(){
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	
 
 	GLFWwindow* window = glfwCreateWindow(window_x_size,window_y_size, "AskYourTexture", NULL, NULL);
 	if (window == NULL){
@@ -40,86 +49,47 @@ int main(){
 	if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
 		std::cout<<"error 2";
 		return -1;
+		
 	}
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	const char* vertexShaderSource = R"(
-	#version 330 core
+	// // creazione shaders
+	// unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	// unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	// // passo il prog.
+	// glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+	// glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+	// // compilazione shaders
+	// glCompileShader(vertexShader);
+	// glCompileShader(fragmentShader);
+	// unsigned int shaderProgram = glCreateProgram();
+	// glAttachShader(shaderProgram, vertexShader);
+	// glAttachShader(shaderProgram, fragmentShader);
+	// glLinkProgram(shaderProgram);
+	// //a quanto pare, una volta messi nel programma, gli shader non servono più (singoli)
+	// glDeleteShader(vertexShader);
+	// glDeleteShader(fragmentShader);
 
-	layout (location = 0) in vec3 aPos; // posizione in ingresso letteralmente "in"
-	layout (location = 1) in vec3 aColor;
-	layout (location = 2) in vec3 aNormal;
+	unsigned int shaderProgram = generateProgram(&vertexShaderSource, &fragmentShaderSource);
+	unsigned int textureProgram = generateProgram(&vertexShaderTexture, &fragmentShaderTexture);
 
-	uniform mat4 transform; // for the camera rotation
-
-	out vec3 ourColor;
-	out vec3 worldPos;
-	out vec3 worldNormal; 
-	void main()
-	{
-		gl_Position = transform * vec4(aPos, 1.0f);   // coord. omogenee.
-		ourColor = aColor;
-		worldPos = aPos;
-		worldNormal = aNormal;
-	}
-	)";
-
-	const char* fragmentShaderSource = R"(
-	#version 330 core
-
-	in vec3 ourColor;
-	in vec3 worldPos;
-	in vec3 worldNormal;
-
-	uniform vec3 lightPos;
-
-	out vec4 FragColor; // vettore di output = colore
-	void main() {
-		vec3 n = normalize(worldNormal);
-		vec3 l = normalize(lightPos - worldPos);
-		float brightness = 0.3 + 0.7*max(dot(n, l), 0.0);
-		FragColor = vec4(ourColor * brightness, 1.0);  
-	})";
-
-	// creazione shaders
-	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	
-	// passo il prog.
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	
-	// compilazione shaders
-	glCompileShader(vertexShader);
-	glCompileShader(fragmentShader);
-
-	unsigned int shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-	//a quanto pare, una volta messi nel programma, gli shader non servono più (singoli)
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-	
-	
 
 // ----- STUFF IN THE SCENE -----
 
-// CUBE now has a class
-Cube cube;
-cube.setupGL();
+	// CUBE now has a class
+	Cube cube;
+	cube.setupGL();
 
 
-float floorVertices[] = { // FLOOR
-    // normal (0,1,0) — gray
-    -4.0f, -1.2f, -4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,
-     4.0f, -1.2f, -4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,
-     4.0f, -1.2f,  4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,
-    -4.0f, -1.2f, -4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,
-    -4.0f, -1.2f,  4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,
-     4.0f, -1.2f,  4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,
-};
+	float floorVertices[] = { // FLOOR
+		// normal (0,1,0) — gray, last two are the UV -> mapping 2D texture to 3D floor.
+		-4.0f, -1.2f, -4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,  0,0,
+		4.0f, -1.2f, -4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,  1,0,
+		4.0f, -1.2f,  4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,  1,1,  
+		-4.0f, -1.2f, -4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,  0,0,
+		-4.0f, -1.2f,  4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,  0,1,
+		4.0f, -1.2f,  4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,  1,1,
+	};
 	unsigned int VBOFloor;
 	glGenBuffers(1, &VBOFloor);
 	glBindBuffer(GL_ARRAY_BUFFER, VBOFloor);
@@ -130,14 +100,17 @@ float floorVertices[] = { // FLOOR
 	glGenVertexArrays(1, &VAOFloor);
 	glBindVertexArray(VAOFloor); 
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11*sizeof(float), (void*)0); //mapping coords
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (void*)12);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11*sizeof(float), (void*)12); //mapping color
 	glEnableVertexAttribArray(1);
 
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (void*)24);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11*sizeof(float), (void*)24); //mapping normals
 	glEnableVertexAttribArray(2);
+
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11*sizeof(float), (void*)36); // mapping UV
+	glEnableVertexAttribArray(3);
 	
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);   
@@ -160,64 +133,77 @@ float floorVertices[] = { // FLOOR
 	perspective(projection,fov,aspect_ratio,0.1, 100);
 	float R = 8.0f;
 	float target[3] = {0};
-	float f[3];
-	float r[3];
-	float up[3] = {0,1,0};
 	float s[3];
 	GLint loc = glGetUniformLocation(shaderProgram, "transform");
-	
-	float eye[3] = { 
-			R*cos(0)*cos(elev), 
-			R*sin(elev), 
-			R*sin(0)*cos(elev)
-	};
+	GLint texLoc = glGetUniformLocation(textureProgram, "transform");
+	GLint texSamplerLoc = glGetUniformLocation(textureProgram, "ourTexture");
+
 
 	// light source!
 	float lightPos[3] = {5.0f, 5.0f, 5.0f};
 	float R_light = 5.0f;
 	float speed = 0.3;
 	GLint lightLoc = glGetUniformLocation(shaderProgram, "lightPos");
+	GLint texLightLoc = glGetUniformLocation(textureProgram, "lightPos");
 
 	// shadows!
 	Shadow shad(cube.getCorners(), lightPos, floorVertices[1]);
 
 	shad.setupGL();
+
+	// textures!
+	std::string path = "../Texture_large.jpg"; // relative to the executable
+	int idTexture = loadTexture(path);
+
+	//camera!
+	float position[3] = {7.88,1.39,0};
+
+	float front[3];
+	for(int i=0; i<3; i++) front[i] = position[i];
+	normalize(front);
+
+	float pitch = asin(front[1])*180/M_PI;  //input in deg.
+	float yaw = atan2(front[2], front[0])*180/M_PI; 
+
+	Camera cam(position,pitch, yaw);
+	
+
+	double mouseX,mouseY;
+
+	float t, dt ,lastT;
+
+	lastT = glfwGetTime();
 	// loop
 	while(!glfwWindowShouldClose(window)){
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glUseProgram(shaderProgram);
+		
 
-		float t = glfwGetTime();
+		t = glfwGetTime();
+		dt = t - lastT;
+		lastT = t;
 	//  ----- ORBITING VIEW CALCULATION -----
 		
 		//camera orbiting
-		if(ROTATING_CAM) {
-			eye[0] = R*cos(t)*cos(elev);
-			eye[1] = R*sin(elev);
-			eye[0] = R*sin(t)*cos(elev);
-		}
+		glfwGetCursorPos(window, &mouseX, &mouseY);
+		cam.processMouse(mouseX, mouseY);
 
-		f[0] = -eye[0]; f[1] =  -eye[1]; f[2] = -eye[2]; 
-		normalize(f);
-		// up x f
-		r[0] = up[1]*f[2] -up[2]*f[1];
-		r[1] = up[2]*f[0] - up[0]*f[2];
-		r[2] = up[0]*f[1] - up[1]*f[0];
-		// f x r
-		s[0] = f[1]*r[2] - f[2]*r[1];
+		if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			cam.processKeyboard(GLFW_KEY_W, dt);
 
-		s[1] = f[2]*r[0] - f[0]*r[2];
-		s[2] = f[0]*r[1] - f[1]*r[0];
+		if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			cam.processKeyboard(GLFW_KEY_A, dt);
 
-		view[0]=r[0]; view[4]=r[1]; view[8]=r[2];
-		view[1]=s[0]; view[5]=s[1]; view[9]=s[2];
-		view[2]=-f[0]; view[6]=-f[1]; view[10]=-f[2];
-		view[3]=0; view[7]=0; view[11]=0;
-		view[12] = -( r[0]*eye[0] + r[1]*eye[1] + r[2]*eye[2] );   // -dot(r, eye)
-		view[13] = -( s[0]*eye[0] + s[1]*eye[1] + s[2]*eye[2] );   // -dot(s, eye)
-		view[14] =  ( f[0]*eye[0] + f[1]*eye[1] + f[2]*eye[2] );   // +dot(f, eye)
+		if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			cam.processKeyboard(GLFW_KEY_S, dt);
+
+		if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			cam.processKeyboard(GLFW_KEY_D, dt);
+
+
+		cam.getViewMatrix(view);
+
 
 	// ----- ORBITING SUN CALCULATION -----
 		if(ROTATING_SUN){
@@ -232,9 +218,16 @@ float floorVertices[] = { // FLOOR
 
 		shad.update(lightPos);
 		//draw floor
+		glUseProgram(textureProgram);
+		glUniform1i(texSamplerLoc, 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, idTexture);
+		glUniformMatrix4fv(texLoc, 1, GL_FALSE, transform);
+		glUniform3fv(texLightLoc, 1, lightPos); 	
+
 		glBindVertexArray(VAOFloor);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		
+		glUseProgram(shaderProgram);
 		shad.draw();
 		cube.draw();
 	// ----- LIGHT CALCULATION -----
@@ -272,7 +265,54 @@ void mult4x4(float* out, const float* a, const float* b) {
 	}
 }
 
-void normalize(float v[3]){
-	float len = sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
-	v[0] /= len; v[1]/=len; v[2]/=len;
+
+
+int loadTexture(const std::string path) {
+	int w, h, channels;
+	uint id;
+    unsigned char* data = stbi_load(path.c_str(), &w, &h, &channels, 4);   // force RGBA
+
+    glGenTextures(1, &id); 
+	glBindTexture(GL_TEXTURE_2D, id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_REPEAT);
+	
+	stbi_image_free(data);
+    return id;
+}
+
+unsigned int generateProgram(const char** vs,const char** fs) {
+	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(vertexShader, 1, vs, NULL);
+	glShaderSource(fragmentShader, 1, fs, NULL);
+	glCompileShader(vertexShader);
+	checkShader(vertexShader);
+
+	glCompileShader(fragmentShader);
+	checkShader(fragmentShader);
+
+	unsigned int textureProgram = glCreateProgram();
+	glAttachShader(textureProgram, vertexShader);
+	glAttachShader(textureProgram, fragmentShader);
+	glLinkProgram(textureProgram);
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+	return textureProgram;
+}
+
+bool checkShader(unsigned int shader) {
+    GLint ok;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
+    if (!ok) {
+        char log[512];
+        glGetShaderInfoLog(shader, sizeof(log), NULL, log);
+        std::cout<<log;
+        return false;
+    }
+    return true;
 }
