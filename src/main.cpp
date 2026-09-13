@@ -15,7 +15,7 @@
 
 
 #define ROTATING_SUN 0
-#define ROTATING_CAM 1
+#define ROTATING_CAM 0
 
 
 
@@ -159,13 +159,13 @@ int main(){
 	float position[3] = {7.88,1.39,0};
 
 	float front[3];
-	for(int i=0; i<3; i++) front[i] = position[i];
+	for(int i=0; i<3; i++) front[i] = -position[i];
 	normalize(front);
 
 	float pitch = asin(front[1])*180/M_PI;  //input in deg.
 	float yaw = atan2(front[2], front[0])*180/M_PI; 
 
-	Camera cam(position,pitch, yaw);
+	Camera cam(position, yaw, pitch);
 	
 
 	double mouseX,mouseY;
@@ -177,8 +177,6 @@ int main(){
 	while(!glfwWindowShouldClose(window)){
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		
 
 		t = glfwGetTime();
 		dt = t - lastT;
