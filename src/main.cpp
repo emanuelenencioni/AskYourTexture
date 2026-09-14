@@ -14,9 +14,8 @@
 #include "camera.hpp"
 
 
-#define ROTATING_SUN 0
+#define ROTATING_SUN 1
 #define ROTATING_CAM 0
-
 
 
 void perspective(float* m, float fovRadians, float aspect, float near, float far);
@@ -116,7 +115,6 @@ int main(){
 	glBindBuffer(GL_ARRAY_BUFFER, 0);   
 
 
-
 	glViewport(0,0,window_x_size,window_y_size);
 	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 
@@ -168,6 +166,13 @@ int main(){
 	Camera cam(position, yaw, pitch);
 	
 
+	// Gamma toggling
+	bool gammaOn = true;          // start corrected; pressing G dims it — or reverse, your call
+	bool gWasPressed = false;
+	GLint gammaLoc     = glGetUniformLocation(shaderProgram,  "uGamma");
+	GLint texGammaLoc  = glGetUniformLocation(textureProgram, "uGamma");
+
+
 	double mouseX,mouseY;
 
 	float t, dt ,lastT;
@@ -181,6 +186,13 @@ int main(){
 		t = glfwGetTime();
 		dt = t - lastT;
 		lastT = t;
+
+		bool gPressed = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
+		if(gPressed && !gWasPressed){
+			gammaOn = !gammaOn;
+		}
+		gWasPressed = gPressed;
+
 	//  ----- ORBITING VIEW CALCULATION -----
 		
 		//camera orbiting
@@ -225,13 +237,17 @@ int main(){
 
 		glBindVertexArray(VAOFloor);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		glUniform1f(texGammaLoc, gammaOn ? 1.0f : 0.0f);   // for textureProgram users (floor)
+
+
 		glUseProgram(shaderProgram);
 		shad.draw();
 		cube.draw();
-	// ----- LIGHT CALCULATION -----
 		
-		
-		
+		glUniform1f(gammaLoc, gammaOn ? 1.0f : 0.0f);      // for shaderProgram users (cube/shadow)
+
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

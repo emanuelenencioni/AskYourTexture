@@ -31,12 +31,20 @@ in vec3 worldNormal;
 
 uniform vec3 lightPos;
 
+uniform float uGamma;
+
+
 out vec4 FragColor; // vettore di output = colore
 void main() {
     vec3 n = normalize(worldNormal);
     vec3 l = normalize(lightPos - worldPos);
     float brightness = 0.3 + 0.7*max(dot(n, l), 0.0);
-    FragColor = vec4(ourColor * brightness, 1.0);  
+    //gamma correction
+    FragColor = vec4(pow(brightness * ourColor,vec3(mix(1.0, 1.0/2.2, uGamma))), 1.0);
+    
+    // old code
+    //FragColor = vec4(ourColor * brightness, 1.0);  
+    
 })";
 
 // ----- TEXTURE IMPLEMENTATION -----
@@ -78,12 +86,21 @@ in vec2 textCoord;
 uniform vec3 lightPos;
 uniform sampler2D ourTexture;
 
+uniform float uGamma;
+
 out vec4 FragColor; // vettore di output = colore
 void main() {
     vec3 n = normalize(worldNormal);
     vec3 l = normalize(lightPos - worldPos);
     float brightness = 0.3 + 0.7*max(dot(n, l), 0.0);
-    vec3 baseColor = texture(ourTexture, textCoord).rgb;
-    FragColor = vec4(baseColor * brightness, 1.0);  
+
+    //gamma correction
+    vec3 baseColor = pow(texture(ourTexture, textCoord).rgb, vec3(2.2));
+    FragColor = vec4(pow(brightness * baseColor,vec3(mix(1.0, 1.0/2.2, uGamma))), 1.0); // uGamma control the actual gamma correction, to do or not to do.
+
+    // old code
+    //vec3 baseColor = texture(ourTexture, textCoord).rgb;
+    //FragColor = vec4(baseColor * brightness, 1.0);  
+
 })";
 
