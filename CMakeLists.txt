@@ -23,3 +23,9 @@ target_link_libraries(AskYourTexture PRIVATE
     glfw
     OpenGL::GL
 )
+
+add_executable(tests
+    tests/test_math.cpp
+)
+
+target_include_directories(tests PRIVATE external include)

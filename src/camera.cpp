@@ -109,10 +109,3 @@ void Camera::getUp(float out[3]) {
     cross(out,front,right);
     normalize(out);
 }     // right × front
-
-
-void Camera::cross(float out[3], const float a[3], const float b[3]) {
-    out[0] = a[1]*b[2]-a[2]*b[1];
-    out[1] = a[2]*b[0] - a[0]*b[2];
-    out[2] = a[0]*b[1] - a[1]*b[0];
-}

@@ -30,7 +30,6 @@ private:
     void getFront(float out[3]);  // trig: (cosY*cosP, sinP, sinY*cosP)
     void getRight(float out[3]);  // front × worldUp — you already wrote cross products
     void getUp(float out[3]);     // right × front
-    void cross(float out[3], const float a[3], const float b[3]);
 };
 
 
