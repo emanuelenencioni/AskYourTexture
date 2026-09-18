@@ -78,6 +78,8 @@ void main()
 const char* fragmentShaderTexture = R"(
 #version 330 core
 
+uniform sampler2D normalTexture;
+
 in vec3 ourColor;
 in vec3 worldPos;
 in vec3 worldNormal;
@@ -90,8 +92,16 @@ uniform float uGamma;
 
 out vec4 FragColor; // vettore di output = colore
 void main() {
-    vec3 n = normalize(worldNormal);
+    //vec3 n = normalize(worldNormal); //old normals.
     vec3 l = normalize(lightPos - worldPos);
+
+
+    vec3 n_t = texture(normalTexture, textCoord).xyz * 2.0 - 1.0; // RAW no sRGB decode.
+    const vec3 T = vec3(1.0, 0.0, 0.0);
+    const vec3 B = vec3(0.0, 0.0, 1.0);
+    const vec3 N = vec3(0.0, 1.0, 0.0);
+    vec3 n  = normalize (mat3(T,B,N)*n_t);
+
     float brightness = 0.3 + 0.7*max(dot(n, l), 0.0);
 
     //gamma correction

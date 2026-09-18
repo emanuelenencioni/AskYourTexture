@@ -135,6 +135,7 @@ int main(){
 	GLint loc = glGetUniformLocation(shaderProgram, "transform");
 	GLint texLoc = glGetUniformLocation(textureProgram, "transform");
 	GLint texSamplerLoc = glGetUniformLocation(textureProgram, "ourTexture");
+	GLint normalSamplerLoc = glGetUniformLocation(textureProgram, "normalTexture");
 
 
 	// light source!
@@ -150,8 +151,10 @@ int main(){
 	shad.setupGL();
 
 	// textures!
-	std::string path = "../Texture_large.jpg"; // relative to the executable
-	int idTexture = loadTexture(path);
+	std::string imagePath = "../Ground108_4K-PNG/Ground108_4K-PNG_Color.png"; // relative to the executable
+	std::string normalPath = "../Ground108_4K-PNG/Ground108_4K-PNG_NormalGL.png";
+	int idTexture = loadTexture(imagePath);
+	int idNormal = loadTexture(normalPath);
 
 	//camera!
 	float position[3] = {7.88,1.39,0};
@@ -234,6 +237,12 @@ int main(){
 		glBindTexture(GL_TEXTURE_2D, idTexture);
 		glUniformMatrix4fv(texLoc, 1, GL_FALSE, transform);
 		glUniform3fv(texLightLoc, 1, lightPos); 	
+
+		// normal mapping
+		glUniform1i(normalSamplerLoc, 1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, idNormal);
+
 
 		glBindVertexArray(VAOFloor);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
