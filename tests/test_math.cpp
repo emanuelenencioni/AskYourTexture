@@ -75,3 +75,51 @@ TEST_CASE("cross") {
         CHECK(len == doctest::Approx(1.0f));               // 1·1·sin(90°) = 1
     }
 }
+
+TEST_CASE("computeTangent") {
+    // Quad spec: p0=(0,0,0) p1=(1,0,0) p2=(0,0,1) — base case in all subcases below.
+
+    SUBCASE("unit quad — UVs follow X") {
+        // E1=(1,0,0) E2=(0,0,1) dU1=(1,0) dU2=(0,1) → det=1, T=E1, B=E2
+        float T[3], B[3];
+        float p0[3]={0,0,0}, p1[3]={1,0,0}, p2[3]={0,0,1};
+        float uv0[2]={0,0}, uv1[2]={1,0}, uv2[2]={0,1};
+        computeTangent(p0,p1,p2, uv0,uv1,uv2, T,B);
+        CHECK(T[0] == doctest::Approx(1.0f));
+        CHECK(T[1] == doctest::Approx(0.0f));
+        CHECK(T[2] == doctest::Approx(0.0f));
+        CHECK(B[0] == doctest::Approx(0.0f));
+        CHECK(B[1] == doctest::Approx(0.0f));
+        CHECK(B[2] == doctest::Approx(1.0f));
+    }
+    SUBCASE("UVs swapped — T follows UVs, not positions") {
+        // dU1=(0,1) dU2=(1,0) → det=−1, r=−1 → T=−(−E2)=E2=(0,0,1), B=E1=(1,0,0)
+        // (roles of T and B trade — the tangent frame tracks the UV layout)
+        float T[3], B[3];
+        float p0[3]={0,0,0}, p1[3]={1,0,0}, p2[3]={0,0,1};
+        float uv0[2]={0,0}, uv1[2]={0,1}, uv2[2]={1,0};
+        computeTangent(p0,p1,p2, uv0,uv1,uv2, T,B);
+        CHECK(T[0] == doctest::Approx(0.0f));
+        CHECK(T[1] == doctest::Approx(0.0f));
+        CHECK(T[2] == doctest::Approx(1.0f));
+        CHECK(B[0] == doctest::Approx(1.0f));
+        CHECK(B[1] == doctest::Approx(0.0f));
+        CHECK(B[2] == doctest::Approx(0.0f));
+    }
+    SUBCASE("degenerate UVs — fallback frame from edge directions, no NaN") {
+        // Contract (revised M3.3): det==0 → T=normalize(E1), B=normalize(E2)
+        // For this quad: E1=(1,0,0), E2=(0,0,1) → same numbers as the floor default,
+        // but the fallback is geometric, so it stays valid on walls too.
+        float T[3]={9,9,9}, B[3]={9,9,9};   // poisoned on purpose: proves the function OVERWRITES
+        float p0[3]={0,0,0}, p1[3]={1,0,0}, p2[3]={0,0,1};
+        float uv0[2]={0.5f,0.5f}, uv1[2]={0.5f,0.5f}, uv2[2]={0.5f,0.5f};
+        computeTangent(p0,p1,p2, uv0,uv1,uv2, T,B);
+        CHECK(T[0] == doctest::Approx(1.0f));
+        CHECK(T[1] == doctest::Approx(0.0f));
+        CHECK(T[2] == doctest::Approx(0.0f));
+        CHECK(B[0] == doctest::Approx(0.0f));
+        CHECK(B[1] == doctest::Approx(0.0f));
+        CHECK(B[2] == doctest::Approx(1.0f));
+        CHECK(std::isnan(T[0]) == false);
+    }
+}
