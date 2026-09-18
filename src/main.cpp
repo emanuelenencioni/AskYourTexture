@@ -293,6 +293,9 @@ void mult4x4(float* out, const float* a, const float* b) {
 int loadTexture(const std::string path) {
 	int w, h, channels;
 	uint id;
+	if(path == NULL)
+		return -1;
+	
     unsigned char* data = stbi_load(path.c_str(), &w, &h, &channels, 4);   // force RGBA
 
     glGenTextures(1, &id); 
