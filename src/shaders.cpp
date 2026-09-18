@@ -94,9 +94,9 @@ out vec4 FragColor; // vettore di output = colore
 void main() {
     //vec3 n = normalize(worldNormal); //old normals.
     vec3 l = normalize(lightPos - worldPos);
+    vec2 tiledUV = textCoord;
 
-
-    vec3 n_t = texture(normalTexture, textCoord).xyz * 2.0 - 1.0; // RAW no sRGB decode.
+    vec3 n_t = texture(normalTexture, tiledUV).xyz * 2.0 - 1.0; // RAW no sRGB decode.
     const vec3 T = vec3(1.0, 0.0, 0.0);
     const vec3 B = vec3(0.0, 0.0, 1.0);
     const vec3 N = vec3(0.0, 1.0, 0.0);

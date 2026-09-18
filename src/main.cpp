@@ -36,7 +36,7 @@ int main(){
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	
+	glfwWindowHint(GLFW_SAMPLES, 4); // MSAA 4x
 
 	GLFWwindow* window = glfwCreateWindow(window_x_size,window_y_size, "AskYourTexture", NULL, NULL);
 	if (window == NULL){
@@ -50,6 +50,8 @@ int main(){
 		return -1;
 		
 	}
+	glEnable(GL_MULTISAMPLE); // MSAA
+
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// // creazione shaders
@@ -293,9 +295,8 @@ void mult4x4(float* out, const float* a, const float* b) {
 int loadTexture(const std::string path) {
 	int w, h, channels;
 	uint id;
-	if(path == NULL)
-		return -1;
-	
+	float maxAniso = 0.0f;
+
     unsigned char* data = stbi_load(path.c_str(), &w, &h, &channels, 4);   // force RGBA
 
 	if (!data){
@@ -306,11 +307,18 @@ int loadTexture(const std::string path) {
     glGenTextures(1, &id); 
 	glBindTexture(GL_TEXTURE_2D, id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	// Mipmaps
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); //trilinear filtering
+
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_REPEAT);
+
+	// Anisotropic filtering
+	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAniso * 0.5f);
 	
 	stbi_image_free(data);
     return id;
