@@ -73,7 +73,7 @@ int main(){
 
 	unsigned int shaderProgram = generateProgram(&vertexShaderSource, &fragmentShaderSource);
 	unsigned int textureProgram = generateProgram(&vertexShaderTexture, &fragmentShaderTexture);
-
+	unsigned int quadProgram = generateProgram(&vertexShaderQuad, &fragmentShaderQuad);
 
 // ----- STUFF IN THE SCENE -----
 
@@ -122,7 +122,39 @@ int main(){
 
 	glEnable(GL_DEPTH_TEST);
 	
+	//  FBO - 
+	float quadVertices[] = {
+         // pos(2)   uv(2)
+         -1.0f, -1.0f,   0.0f, 0.0f,
+          1.0f, -1.0f,   1.0f, 0.0f,
+          1.0f,  1.0f,   1.0f, 1.0f,
+         -1.0f, -1.0f,   0.0f, 0.0f,
+         -1.0f,  1.0f,   0.0f, 1.0f,
+          1.0f,  1.0f,   1.0f, 1.0f,
+     };
+
+     unsigned int VBOQuad, VAOQuad;
+     glGenBuffers(1, &VBOQuad);          // ← the two missing lines:
+     glGenVertexArrays(1, &VAOQuad);     //    generate BEFORE binding
+
+     glBindVertexArray(VAOQuad);
+     glBindBuffer(GL_ARRAY_BUFFER, VBOQuad);
+     glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+
+     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)0);
+     glEnableVertexAttribArray(0);
+     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)8);
+     glEnableVertexAttribArray(1);
+
+     glBindVertexArray(0);
+     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
+
+
+
 	float aspect_ratio = window_x_size / window_y_size;
+	
 	//rotation data
 	float m[16];
 	float fov = M_PI/3;
@@ -183,6 +215,10 @@ int main(){
 	float t, dt ,lastT;
 
 	lastT = glfwGetTime();
+
+	// HDR 
+	GLint quadSamplerLoc = glGetUniformLocation(quadProgram, "hdrBuffer");
+
 	// loop
 	while(!glfwWindowShouldClose(window)){
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -257,6 +293,13 @@ int main(){
 		cube.draw();
 		
 		glUniform1f(gammaLoc, gammaOn ? 1.0f : 0.0f);      // for shaderProgram users (cube/shadow)
+
+		glDisable(GL_DEPTH_TEST);          // ← wallpaper, not geometry: must not fight scene depth
+		glUseProgram(quadProgram);
+		glUniform1i(quadSamplerLoc, 0);    // test rig: floor texture already on unit 0
+		glBindVertexArray(VAOQuad);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glEnable(GL_DEPTH_TEST);           // restore for next frame's scene
 
 
 		glfwSwapBuffers(window);

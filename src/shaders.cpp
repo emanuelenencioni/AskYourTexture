@@ -114,3 +114,25 @@ void main() {
 
 })";
 
+
+
+// vertex: pure passthrough — no matrix, no normals. The quad IS in final coordinates.
+const char* vertexShaderQuad = R"(
+#version 330 core
+layout (location = 0) in vec2 aPos;
+layout (location = 1) in vec2 aUV;
+out vec2 uv;
+void main() {
+    gl_Position = vec4(aPos, 0.0, 1.0);
+    uv = aUV;
+})";
+
+// fragment: test rig — sample an existing texture, tone mapping comes at step 4/5
+const char* fragmentShaderQuad = R"(
+#version 330 core
+in vec2 uv;
+uniform sampler2D hdrBuffer;   // for now: floor color texture as test content
+out vec4 FragColor;
+void main() {
+    FragColor = texture(hdrBuffer, uv);
+})";
