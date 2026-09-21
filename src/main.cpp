@@ -125,33 +125,58 @@ int main(){
 	//  FBO - 
 	float quadVertices[] = {
          // pos(2)   uv(2)
-         -1.0f, -1.0f,   0.0f, 0.0f,
-          1.0f, -1.0f,   1.0f, 0.0f,
-          1.0f,  1.0f,   1.0f, 1.0f,
-         -1.0f, -1.0f,   0.0f, 0.0f,
-         -1.0f,  1.0f,   0.0f, 1.0f,
-          1.0f,  1.0f,   1.0f, 1.0f,
-     };
+		-1.0f, -1.0f,   0.0f, 0.0f,
+		1.0f, -1.0f,   1.0f, 0.0f,
+		1.0f,  1.0f,   1.0f, 1.0f,
+		-1.0f, -1.0f,   0.0f, 0.0f,
+		-1.0f,  1.0f,   0.0f, 1.0f,
+		1.0f,  1.0f,   1.0f, 1.0f,
+	};
 
-     unsigned int VBOQuad, VAOQuad;
-     glGenBuffers(1, &VBOQuad);          // ← the two missing lines:
-     glGenVertexArrays(1, &VAOQuad);     //    generate BEFORE binding
+	unsigned int VBOQuad, VAOQuad;
+	glGenBuffers(1, &VBOQuad);          // ← the two missing lines:
+	glGenVertexArrays(1, &VAOQuad);     //    generate BEFORE binding
 
-     glBindVertexArray(VAOQuad);
-     glBindBuffer(GL_ARRAY_BUFFER, VBOQuad);
-     glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+	glBindVertexArray(VAOQuad);
+	glBindBuffer(GL_ARRAY_BUFFER, VBOQuad);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
 
-     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)0);
-     glEnableVertexAttribArray(0);
-     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)8);
-     glEnableVertexAttribArray(1);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)8);
+	glEnableVertexAttribArray(1);
 
-     glBindVertexArray(0);
-     glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+	// HDR FRAME BUFFER
 
+	unsigned int texHDR;
+	glGenTextures(1, &texHDR);
+	glBindTexture(GL_TEXTURE_2D, texHDR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, window_x_size, window_y_size, 0, GL_RGBA, GL_FLOAT, NULL);                       // data = NULL → allocate only
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);   // ← NOT REPEAT
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);   //   (fullscreen quad touches 0 and 1 exactly)
 
+	// renderbuffer 
+	unsigned int rboDepth;
+	glGenRenderbuffers(1, &rboDepth);
+	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window_x_size, window_y_size);
 
+	// assemble the frame
+	unsigned int fboHDR;
+	glGenFramebuffers(1, &fboHDR);
+	glBindFramebuffer(GL_FRAMEBUFFER, fboHDR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texHDR, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "FBO incomplete!" << std::endl;
+	
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);   // ← back to the default framebuffer; render loop untouched for now
 
 	float aspect_ratio = window_x_size / window_y_size;
 	
@@ -221,8 +246,11 @@ int main(){
 
 	// loop
 	while(!glfwWindowShouldClose(window)){
+		glBindFramebuffer(GL_FRAMEBUFFER, fboHDR); // HDR
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		
 
 		t = glfwGetTime();
 		dt = t - lastT;
@@ -294,13 +322,17 @@ int main(){
 		
 		glUniform1f(gammaLoc, gammaOn ? 1.0f : 0.0f);      // for shaderProgram users (cube/shadow)
 
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);          // ← wallpaper, not geometry: must not fight scene depth
 		glUseProgram(quadProgram);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texHDR);
 		glUniform1i(quadSamplerLoc, 0);    // test rig: floor texture already on unit 0
 		glBindVertexArray(VAOQuad);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glEnable(GL_DEPTH_TEST);           // restore for next frame's scene
 
+		
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
