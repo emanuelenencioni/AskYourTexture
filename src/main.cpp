@@ -231,9 +231,8 @@ int main(){
 	// Gamma toggling
 	bool gammaOn = true;          // start corrected; pressing G dims it — or reverse, your call
 	bool gWasPressed = false;
-	GLint gammaLoc     = glGetUniformLocation(shaderProgram,  "uGamma");
-	GLint texGammaLoc  = glGetUniformLocation(textureProgram, "uGamma");
-
+	// GLint gammaLoc     = glGetUniformLocation(shaderProgram,  "uGamma");
+	// GLint texGammaLoc  = glGetUniformLocation(textureProgram, "uGamma");
 
 	double mouseX,mouseY;
 
@@ -243,6 +242,8 @@ int main(){
 
 	// HDR 
 	GLint quadSamplerLoc = glGetUniformLocation(quadProgram, "hdrBuffer");
+	GLint quadGammaLoc = glGetUniformLocation(quadProgram, "uGamma");
+
 
 	// loop
 	while(!glfwWindowShouldClose(window)){
@@ -291,19 +292,15 @@ int main(){
 		}
 		
 		mult4x4(transform, projection, view);
-	
-		glUniformMatrix4fv(loc, 1, GL_FALSE, transform);
-		glUniform3fv(lightLoc, 1, lightPos); 	
 
 		shad.update(lightPos);
-		//draw floor
+		// ------ draw floor -----
 		glUseProgram(textureProgram);
 		glUniform1i(texSamplerLoc, 0);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, idTexture);
 		glUniformMatrix4fv(texLoc, 1, GL_FALSE, transform);
 		glUniform3fv(texLightLoc, 1, lightPos); 	
-
 		// normal mapping
 		glUniform1i(normalSamplerLoc, 1);
 		glActiveTexture(GL_TEXTURE1);
@@ -313,17 +310,20 @@ int main(){
 		glBindVertexArray(VAOFloor);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		glUniform1f(texGammaLoc, gammaOn ? 1.0f : 0.0f);   // for textureProgram users (floor)
+		//glUniform1f(texGammaLoc, gammaOn ? 1.0f : 0.0f);   // for textureProgram users (floor)
 
-
+		// ----- cube/shadow drawing -----
 		glUseProgram(shaderProgram);
+		glUniformMatrix4fv(loc, 1, GL_FALSE, transform);
+		glUniform3fv(lightLoc, 1, lightPos); 	
 		shad.draw();
 		cube.draw();
 		
-		glUniform1f(gammaLoc, gammaOn ? 1.0f : 0.0f);      // for shaderProgram users (cube/shadow)
+		//glUniform1f(gammaLoc, gammaOn ? 1.0f : 0.0f);      // for shaderProgram users (cube/shadow)
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);          // ← wallpaper, not geometry: must not fight scene depth
+	
 		glUseProgram(quadProgram);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texHDR);
@@ -331,7 +331,7 @@ int main(){
 		glBindVertexArray(VAOQuad);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glEnable(GL_DEPTH_TEST);           // restore for next frame's scene
-
+		glUniform1f(quadGammaLoc, gammaOn ? 1.0f : 0.0f);
 		
 
 		glfwSwapBuffers(window);
@@ -410,13 +410,21 @@ unsigned int generateProgram(const char** vs,const char** fs) {
 	glCompileShader(fragmentShader);
 	checkShader(fragmentShader);
 
-	unsigned int textureProgram = glCreateProgram();
-	glAttachShader(textureProgram, vertexShader);
-	glAttachShader(textureProgram, fragmentShader);
-	glLinkProgram(textureProgram);
+	unsigned int program = glCreateProgram();
+	glAttachShader(program, vertexShader);
+	glAttachShader(program, fragmentShader);
+	glLinkProgram(program);
+	GLint ok;
+	glGetProgramiv(program, GL_LINK_STATUS, &ok);
+	if(!ok) {
+		char log[512];
+		glGetProgramInfoLog(program, sizeof(log),NULL, log);
+		std::cout<<"LINK ERROR: "<<log<<std::endl;
+	}
+
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
-	return textureProgram;
+	return program;
 }
 
 bool checkShader(unsigned int shader) {
