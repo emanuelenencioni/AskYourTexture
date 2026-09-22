@@ -130,9 +130,10 @@ uniform sampler2D hdrBuffer;   // for now: floor color texture as test content
 out vec4 FragColor;
 
 uniform float uGamma;
+uniform float uExposure;
 
 void main() {
     vec3 hdr = texture(hdrBuffer, uv).rgb;
-    vec3 toneMapped = vec3(1.0) -exp(-hdr*1.0);
+    vec3 toneMapped = vec3(1.0) -exp(-hdr*uExposure);
     FragColor =  vec4(pow(toneMapped, vec3(mix(1.0, 1.0/2.2, uGamma))), 1.0);
 })";

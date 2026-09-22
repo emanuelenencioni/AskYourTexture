@@ -14,7 +14,7 @@
 #include "camera.hpp"
 
 
-#define ROTATING_SUN 1
+#define ROTATING_SUN 0
 #define ROTATING_CAM 0
 
 
@@ -243,6 +243,9 @@ int main(){
 	// HDR 
 	GLint quadSamplerLoc = glGetUniformLocation(quadProgram, "hdrBuffer");
 	GLint quadGammaLoc = glGetUniformLocation(quadProgram, "uGamma");
+	// realtime exposure selection
+	float exposure = 1.0f;
+	GLint quadExposureLoc = glGetUniformLocation(quadProgram, "uExposure");
 
 
 	// loop
@@ -262,7 +265,7 @@ int main(){
 			gammaOn = !gammaOn;
 		}
 		gWasPressed = gPressed;
-
+// ----- INPUT HANDLING -----
 	//  ----- ORBITING VIEW CALCULATION -----
 		
 		//camera orbiting
@@ -281,9 +284,12 @@ int main(){
 		if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 			cam.processKeyboard(GLFW_KEY_D, dt);
 
-
 		cam.getViewMatrix(view);
-
+	// ----- EXPOSURE LEVEL -----
+		if (glfwGetKey(window, GLFW_KEY_UP)   == GLFW_PRESS) exposure += dt * 0.5f;
+		if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) exposure -= dt * 0.5f;
+		if (exposure < 0.05f) exposure = 0.05f; 
+		std::cout<<"Exposure value: "<<exposure<<std::endl;
 
 	// ----- ORBITING SUN CALCULATION -----
 		if(ROTATING_SUN){
@@ -325,6 +331,7 @@ int main(){
 		glDisable(GL_DEPTH_TEST);          // ← wallpaper, not geometry: must not fight scene depth
 	
 		glUseProgram(quadProgram);
+		glUniform1f(quadExposureLoc, exposure);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texHDR);
 		glUniform1i(quadSamplerLoc, 0);    // test rig: floor texture already on unit 0
