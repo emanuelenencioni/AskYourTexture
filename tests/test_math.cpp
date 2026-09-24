@@ -123,3 +123,38 @@ TEST_CASE("computeTangent") {
         CHECK(std::isnan(T[0]) == false);
     }
 }
+
+TEST_CASE("computeTangent — orthonormal frame on a rotated triangle") {
+    // M0 task 5 — the T/B from computeTangent must form a valid tangent frame for ANY
+    // (non-degenerate) triangle orientation, not just the axis-aligned floor.
+    SUBCASE("skew triangle on a tilted plane") {
+        // Off the XY plane (p2 has a z-component); edges deliberately not perpendicular.
+        float p0[3] = {0, 0, 0};
+        float p1[3] = {2, 0, 0};
+        float p2[3] = {1, 2, 1};
+        float uv0[2] = {0, 0};
+        float uv1[2] = {1, 0};
+        float uv2[2] = {0, 1};
+
+        // Geometric normal of the triangle: N = normalize(cross(E1, E2)).
+        float E1[3] = {p1[0]-p0[0], p1[1]-p0[1], p1[2]-p0[2]};
+        float E2[3] = {p2[0]-p0[0], p2[1]-p0[1], p2[2]-p0[2]};
+        float N[3];
+        cross(N, E1, E2);
+        normalize(N);
+
+        float T[3], B[3];
+        computeTangent(p0, p1, p2, uv0, uv1, uv2, T, B);
+        CHECK((T[0]*N[0] + T[1]*N[1] + T[2]*N[2]) == doctest::Approx(0.0f));
+        CHECK((B[0]*N[0] + B[1]*N[1] + B[2]*N[2]) == doctest::Approx(0.0f));
+        CHECK(std::sqrt(T[0]*T[0]+T[1]*T[1] + T[2]*T[2]) == doctest::Approx(1.0f));
+        CHECK(std::sqrt(B[0]*B[0]+B[1]*B[1] + B[2]*B[2]) == doctest::Approx(1.0f));
+        // TODO(M0): assert the orthonormality properties that hold for ANY triangle:
+        //   1. T·N ≈ 0     (T is tangent to the surface)
+        //   2. B·N ≈ 0     (B is tangent to the surface)
+        //   3. |T| ≈ 1     (unit tangent)
+        //   4. |B| ≈ 1     (unit bitangent)
+        // Do NOT assert T·B ≈ 0: the raw B from computeTangent is not ⟂ T in general
+        // (that orthogonality is added later by the shader, B = cross(T, N)).
+    }
+}

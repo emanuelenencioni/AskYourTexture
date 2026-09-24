@@ -91,6 +91,37 @@ int main(){
 		-4.0f, -1.2f,  4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,  0,1,
 		4.0f, -1.2f,  4.0f,  0.5f, 0.5f, 0.5f,  0,1,0,  1,1,
 	};
+	float T[2][3];
+	float B[2][3];
+	for(int i=0;i<2;i++){
+		float p[3][3];
+		float uv[3][2];
+		for(int j=0;j<3;j++) {
+			int idx = i*33 + j*11;
+			p[j][0] = floorVertices[idx]; 
+			p[j][1] = floorVertices[idx + 1];
+			p[j][2] = floorVertices[idx + 2];
+
+			uv[j][0] = floorVertices[idx + 9];
+			uv[j][1] = floorVertices[idx + 10];
+		}
+
+		computeTangent(p[0], p[1], p[2],uv[0], uv[1], uv[2], T[i], B[i]);
+	}
+	float tangent[18];
+	for(int i=0; i<18;i=i+3){
+		int idx = i < 9 ? 0 : 1;
+		for(int j=0; j<3; j++) {
+		tangent[i+j] = T[idx][j];
+		}
+	}
+	unsigned int VBOTangent;
+	glGenBuffers(1, &VBOTangent);
+	glBindBuffer(GL_ARRAY_BUFFER, VBOTangent);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(tangent), tangent, GL_STATIC_DRAW);
+
+
 	unsigned int VBOFloor;
 	glGenBuffers(1, &VBOFloor);
 	glBindBuffer(GL_ARRAY_BUFFER, VBOFloor);
@@ -112,6 +143,14 @@ int main(){
 
 	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11*sizeof(float), (void*)36); // mapping UV
 	glEnableVertexAttribArray(3);
+
+
+	// Writing th enew attrib in the VBOTangent array
+	glBindBuffer(GL_ARRAY_BUFFER, VBOTangent);
+
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0); // mapping UV
+	glEnableVertexAttribArray(4);
+
 	
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);   
@@ -289,7 +328,6 @@ int main(){
 		if (glfwGetKey(window, GLFW_KEY_UP)   == GLFW_PRESS) exposure += dt * 0.5f;
 		if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) exposure -= dt * 0.5f;
 		if (exposure < 0.05f) exposure = 0.05f; 
-		std::cout<<"Exposure value: "<<exposure<<std::endl;
 
 	// ----- ORBITING SUN CALCULATION -----
 		if(ROTATING_SUN){

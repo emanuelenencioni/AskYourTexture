@@ -55,6 +55,7 @@ const char* vertexShaderTexture = R"(
 layout (location = 0) in vec3 aPos; // posizione in ingresso letteralmente "in"
 layout (location = 1) in vec3 aColor;
 layout (location = 2) in vec3 aNormal;
+layout (location = 4) in vec3 aTangent;
 
 layout (location = 3) in vec2 aTextCoord;
 
@@ -63,6 +64,8 @@ uniform mat4 transform; // for the camera rotation
 out vec3 ourColor;
 out vec3 worldPos;
 out vec3 worldNormal; 
+out vec3 worldTangent;
+out vec3 worldBitangent;
 
 out vec2 textCoord;
 void main()
@@ -72,6 +75,8 @@ void main()
     worldPos = aPos;
     worldNormal = aNormal;
     textCoord = aTextCoord;
+    worldTangent = aTangent;
+    worldBitangent = normalize(cross(aTangent, aNormal));
 }
 )";
 
@@ -83,6 +88,8 @@ uniform sampler2D normalTexture;
 in vec3 ourColor;
 in vec3 worldPos;
 in vec3 worldNormal;
+in vec3 worldTangent;
+in vec3 worldBitangent;
 in vec2 textCoord;
 
 uniform vec3 lightPos;
@@ -96,10 +103,8 @@ void main() {
     vec2 tiledUV = textCoord;
 
     vec3 n_t = texture(normalTexture, tiledUV).xyz * 2.0 - 1.0; // RAW no sRGB decode.
-    const vec3 T = vec3(1.0, 0.0, 0.0);
-    const vec3 B = vec3(0.0, 0.0, 1.0);
-    const vec3 N = vec3(0.0, 1.0, 0.0);
-    vec3 n  = normalize (mat3(T,B,N)*n_t);
+
+    vec3 n  = normalize (mat3(worldTangent,worldBitangent,worldNormal)*n_t);
 
     float brightness = 0.3 + 0.7*max(dot(n, l), 0.0);
 
