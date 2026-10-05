@@ -26,6 +26,7 @@ target_link_libraries(AskYourTexture PRIVATE
 
 add_executable(tests
     tests/test_math.cpp
+    tests/test_pbr.cpp
 )
 
 target_include_directories(tests PRIVATE external include)
