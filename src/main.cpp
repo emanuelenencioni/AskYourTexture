@@ -223,15 +223,19 @@ int main(){
 	float m[16];
 	float fov = M_PI/3;
 	float elev = 10*M_PI/180;//M_PI/6;
-	float transform[16];
+	float viewProjection[16];
+	float modelFloor[16] = {0}; modelFloor[0]=1; modelFloor[5]=1; modelFloor[10]=1; modelFloor[15]=1;
+	float modelCube[16] = {0}; modelCube[0]=1; modelCube[5]=1; modelCube[10]=1; modelCube[15]=1;
 	float view[16] = {0}; view[0]=1; view[5]=1; view[10]=1; view[15]=1;
 	float projection[16];
 	perspective(projection,fov,aspect_ratio,0.1, 100);
 	float R = 8.0f;
 	float target[3] = {0};
 	float s[3];
-	GLint loc = glGetUniformLocation(shaderProgram, "transform");
-	GLint texLoc = glGetUniformLocation(textureProgram, "transform");
+	GLint loc = glGetUniformLocation(shaderProgram, "viewProjection");
+	GLint texLoc = glGetUniformLocation(textureProgram, "viewProjection");
+	GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
+	GLint modelTexLoc = glGetUniformLocation(textureProgram, "model");
 	GLint texSamplerLoc = glGetUniformLocation(textureProgram, "ourTexture");
 	GLint normalSamplerLoc = glGetUniformLocation(textureProgram, "normalTexture");
 
@@ -335,7 +339,7 @@ int main(){
 			lightPos[1] = R_light * sin(speed*t);
 		}
 		
-		mult4x4(transform, projection, view);
+		mult4x4(viewProjection, projection, view);
 
 		shad.update(lightPos);
 		// ------ draw floor -----
@@ -343,7 +347,8 @@ int main(){
 		glUniform1i(texSamplerLoc, 0);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, idTexture);
-		glUniformMatrix4fv(texLoc, 1, GL_FALSE, transform);
+		glUniformMatrix4fv(texLoc, 1, GL_FALSE, viewProjection);
+		glUniformMatrix4fv(modelTexLoc, 1, GL_FALSE, modelFloor);
 		glUniform3fv(texLightLoc, 1, lightPos); 	
 		// normal mapping
 		glUniform1i(normalSamplerLoc, 1);
@@ -358,7 +363,8 @@ int main(){
 
 		// ----- cube/shadow drawing -----
 		glUseProgram(shaderProgram);
-		glUniformMatrix4fv(loc, 1, GL_FALSE, transform);
+		glUniformMatrix4fv(loc, 1, GL_FALSE, viewProjection);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, modelCube);
 		glUniform3fv(lightLoc, 1, lightPos); 	
 		shad.draw();
 		cube.draw();

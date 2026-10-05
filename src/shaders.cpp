@@ -8,14 +8,15 @@ layout (location = 0) in vec3 aPos; // posizione in ingresso letteralmente "in"
 layout (location = 1) in vec3 aColor;
 layout (location = 2) in vec3 aNormal;
 
-uniform mat4 transform; // for the camera rotation
+uniform mat4 viewProjection; // for the camera rotation
+uniform mat4 model;
 
 out vec3 ourColor;
 out vec3 worldPos;
 out vec3 worldNormal; 
 void main()
 {
-    gl_Position = transform * vec4(aPos, 1.0f);   // coord. omogenee.
+    gl_Position = viewProjection * model * vec4(aPos, 1.0f);   // coord. omogenee.
     ourColor = aColor;
     worldPos = aPos;
     worldNormal = aNormal;
@@ -59,7 +60,8 @@ layout (location = 4) in vec3 aTangent;
 
 layout (location = 3) in vec2 aTextCoord;
 
-uniform mat4 transform; // for the camera rotation
+uniform mat4 viewProjection; // for the camera rotation
+uniform mat4 model;
 
 out vec3 ourColor;
 out vec3 worldPos;
@@ -70,7 +72,7 @@ out vec3 worldBitangent;
 out vec2 textCoord;
 void main()
 {
-    gl_Position = transform * vec4(aPos, 1.0f);   // coord. omogenee.
+    gl_Position = viewProjection * model * vec4(aPos, 1.0f);   // coord. omogenee.
     ourColor = aColor;
     worldPos = aPos;
     worldNormal = aNormal;
