@@ -7,4 +7,6 @@ extern const char* fragmentShaderSource;
 extern const char* fragmentShaderTexture;
 extern const char* vertexShaderQuad;
 extern const char* fragmentShaderQuad;
+extern const char* vertexShaderPBR;
+extern const char* fragmentShaderPBR;
 #endif

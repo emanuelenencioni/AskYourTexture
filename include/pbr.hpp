@@ -1,14 +1,13 @@
-// pbr.hpp — Cook-Torrance BRDF building blocks (M1, Task 1)
-// Pure scalars only (no GLM): keeps this doctest-testable and mechanically
-// portable to GLSL (Task 3). C++11.
-//
-// TODO list — you implement the bodies:
-//   [ ] f0_metallicMix
-//   [ ] f_schlick
-//   [ ] d_ggx
-//   [ ] g_smith (Schlick-GGX form)
-//   [ ] k_direct
-// Contract being enforced by tests/test_pbr.cpp — read it FIRST.
+/**
+ * @file pbr.hpp
+ * @author your name (you@domain.com)
+ * @brief function available as a c++ ref for the GLSL functions
+ * @version 0.1
+ * @date 2026-10-06
+ * 
+ * @copyright Copyright (c) 2026
+ * 
+ */
 
 #ifndef PBR_H
 #define PBR_H
