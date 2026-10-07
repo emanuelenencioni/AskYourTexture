@@ -232,10 +232,10 @@ int main(){
 	float R = 8.0f;
 	float target[3] = {0};
 	float s[3];
-	GLint loc = glGetUniformLocation(shaderProgram, "viewProjection");
-	GLint texLoc = glGetUniformLocation(textureProgram, "viewProjection");
-	GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
-	GLint modelTexLoc = glGetUniformLocation(textureProgram, "model");
+	GLint basicVpLoc = glGetUniformLocation(shaderProgram, "viewProjection");
+	GLint texVpLoc = glGetUniformLocation(textureProgram, "viewProjection");
+	GLint basicModelLoc = glGetUniformLocation(shaderProgram, "model");
+	GLint texModelLoc = glGetUniformLocation(textureProgram, "model");
 	GLint texSamplerLoc = glGetUniformLocation(textureProgram, "ourTexture");
 	GLint normalSamplerLoc = glGetUniformLocation(textureProgram, "normalTexture");
 
@@ -244,7 +244,7 @@ int main(){
 	float lightPos[3] = {5.0f, 5.0f, 5.0f};
 	float R_light = 5.0f;
 	float speed = 0.3;
-	GLint lightLoc = glGetUniformLocation(shaderProgram, "lightPos");
+	GLint basicLightLoc = glGetUniformLocation(shaderProgram, "lightPos");
 	GLint texLightLoc = glGetUniformLocation(textureProgram, "lightPos");
 
 	// shadows!
@@ -347,8 +347,8 @@ int main(){
 		glUniform1i(texSamplerLoc, 0);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, idTexture);
-		glUniformMatrix4fv(texLoc, 1, GL_FALSE, viewProjection);
-		glUniformMatrix4fv(modelTexLoc, 1, GL_FALSE, modelFloor);
+		glUniformMatrix4fv(texVpLoc, 1, GL_FALSE, viewProjection);
+		glUniformMatrix4fv(texModelLoc, 1, GL_FALSE, modelFloor);
 		glUniform3fv(texLightLoc, 1, lightPos); 	
 		// normal mapping
 		glUniform1i(normalSamplerLoc, 1);
@@ -363,9 +363,9 @@ int main(){
 
 		// ----- cube/shadow drawing -----
 		glUseProgram(shaderProgram);
-		glUniformMatrix4fv(loc, 1, GL_FALSE, viewProjection);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, modelCube);
-		glUniform3fv(lightLoc, 1, lightPos); 	
+		glUniformMatrix4fv(basicVpLoc, 1, GL_FALSE, viewProjection);
+		glUniformMatrix4fv(BasicmodelLoc, 1, GL_FALSE, modelCube);
+		glUniform3fv(basicLightLoc, 1, lightPos); 	
 		shad.draw();
 		cube.draw();
 		
