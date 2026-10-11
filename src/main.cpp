@@ -54,26 +54,10 @@ int main(){
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	// // creazione shaders
-	// unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	// unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	// // passo il prog.
-	// glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	// glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	// // compilazione shaders
-	// glCompileShader(vertexShader);
-	// glCompileShader(fragmentShader);
-	// unsigned int shaderProgram = glCreateProgram();
-	// glAttachShader(shaderProgram, vertexShader);
-	// glAttachShader(shaderProgram, fragmentShader);
-	// glLinkProgram(shaderProgram);
-	// //a quanto pare, una volta messi nel programma, gli shader non servono più (singoli)
-	// glDeleteShader(vertexShader);
-	// glDeleteShader(fragmentShader);
 
 	unsigned int shaderProgram = generateProgram(&vertexShaderSource, &fragmentShaderSource);
-	unsigned int textureProgram = generateProgram(&vertexShaderTexture, &fragmentShaderTexture);
 	unsigned int quadProgram = generateProgram(&vertexShaderQuad, &fragmentShaderQuad);
+	unsigned int pbrProgram = generateProgram(&vertexShaderPBR, &fragmentShaderPBR);
 
 // ----- STUFF IN THE SCENE -----
 
@@ -233,19 +217,35 @@ int main(){
 	float target[3] = {0};
 	float s[3];
 	GLint basicVpLoc = glGetUniformLocation(shaderProgram, "viewProjection");
-	GLint texVpLoc = glGetUniformLocation(textureProgram, "viewProjection");
+	// GLint texVpLoc = glGetUniformLocation(textureProgram, "viewProjection");
 	GLint basicModelLoc = glGetUniformLocation(shaderProgram, "model");
-	GLint texModelLoc = glGetUniformLocation(textureProgram, "model");
-	GLint texSamplerLoc = glGetUniformLocation(textureProgram, "ourTexture");
-	GLint normalSamplerLoc = glGetUniformLocation(textureProgram, "normalTexture");
+	// GLint texModelLoc = glGetUniformLocation(textureProgram, "model");
+	// GLint texAlbedoLoc = glGetUniformLocation(textureProgram, "ourTexture");
+	// GLint texNormalLoc = glGetUniformLocation(textureProgram, "normalTexture");
 
+	// PBR locs
+	GLint pbrVpLoc = glGetUniformLocation(pbrProgram, "viewProjection");
+	GLint pbrModelLoc = glGetUniformLocation(pbrProgram, "model");
+	GLint pbrLightLoc = glGetUniformLocation(pbrProgram, "lightPos");
+	GLint pbrViewPosLoc = glGetUniformLocation(pbrProgram, "viewPos");
+	GLint pbrMetallicLoc = glGetUniformLocation(pbrProgram, "uMetallic");
+	GLint pbrAlbedoLoc = glGetUniformLocation(pbrProgram, "albedoTexture");
+	GLint pbrNormalLoc = glGetUniformLocation(pbrProgram, "normalTexture");
+	GLint pbrRoughnessLoc = glGetUniformLocation(pbrProgram, "roughnessTexture");
+	GLint pbrAoLoc = glGetUniformLocation(pbrProgram, "aoTexture");
+
+	glUseProgram(pbrProgram);
+	glUniform1i(pbrAlbedoLoc, 0);
+	glUniform1i(pbrNormalLoc, 1);
+	glUniform1i(pbrRoughnessLoc, 2);
+	glUniform1i(pbrAoLoc, 3);
+		
 
 	// light source!
 	float lightPos[3] = {5.0f, 5.0f, 5.0f};
 	float R_light = 5.0f;
 	float speed = 0.3;
 	GLint basicLightLoc = glGetUniformLocation(shaderProgram, "lightPos");
-	GLint texLightLoc = glGetUniformLocation(textureProgram, "lightPos");
 
 	// shadows!
 	Shadow shad(cube.getCorners(), lightPos, floorVertices[1]);
@@ -258,22 +258,31 @@ int main(){
 	int idTexture = loadTexture(imagePath);
 	int idNormal = loadTexture(normalPath);
 
+	std::string roughnessPath = "../Ground108_4K-PNG/Ground108_4K-PNG_Roughness.png";
+	std::string aoPath = "../Ground108_4K-PNG/Ground108_4K-PNG_AmbientOcclusion.png";
+	int idRoughness = loadTexture(roughnessPath);
+	int idAO = loadTexture(aoPath);
+
 	//camera!
-	float position[3] = {7.88,1.39,0};
+	float camPos[3] = {7.88,1.39,0};
 
 	float front[3];
-	for(int i=0; i<3; i++) front[i] = -position[i];
+	for(int i=0; i<3; i++) front[i] = - camPos[i];
 	normalize(front);
 
 	float pitch = asin(front[1])*180/M_PI;  //input in deg.
 	float yaw = atan2(front[2], front[0])*180/M_PI; 
 
-	Camera cam(position, yaw, pitch);
+	Camera cam(camPos, yaw, pitch);
 	
 
 	// Gamma toggling
 	bool gammaOn = true;          // start corrected; pressing G dims it — or reverse, your call
 	bool gWasPressed = false;
+	
+	
+	float metallic= 0.22; bool mWasPressed = false;
+	
 	// GLint gammaLoc     = glGetUniformLocation(shaderProgram,  "uGamma");
 	// GLint texGammaLoc  = glGetUniformLocation(textureProgram, "uGamma");
 
@@ -284,13 +293,12 @@ int main(){
 	lastT = glfwGetTime();
 
 	// HDR 
-	GLint quadSamplerLoc = glGetUniformLocation(quadProgram, "hdrBuffer");
+	GLint quadHDRLoc = glGetUniformLocation(quadProgram, "hdrBuffer");
 	GLint quadGammaLoc = glGetUniformLocation(quadProgram, "uGamma");
 	// realtime exposure selection
 	float exposure = 1.0f;
 	GLint quadExposureLoc = glGetUniformLocation(quadProgram, "uExposure");
-
-
+	
 	// loop
 	while(!glfwWindowShouldClose(window)){
 		glBindFramebuffer(GL_FRAMEBUFFER, fboHDR); // HDR
@@ -328,6 +336,7 @@ int main(){
 			cam.processKeyboard(GLFW_KEY_D, dt);
 
 		cam.getViewMatrix(view);
+		cam.getPosition(camPos);
 	// ----- EXPOSURE LEVEL -----
 		if (glfwGetKey(window, GLFW_KEY_UP)   == GLFW_PRESS) exposure += dt * 0.5f;
 		if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) exposure -= dt * 0.5f;
@@ -338,23 +347,41 @@ int main(){
 			lightPos[0] = R_light * cos(speed * t);
 			lightPos[1] = R_light * sin(speed*t);
 		}
+	// ----- METALLIG ENABLE/DISABLE -----
+		bool mPressed = glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS;
+		if (( mPressed== GLFW_PRESS) && !mWasPressed)
+			metallic = 1 - metallic;
+		
+		mWasPressed = mPressed;
 		
 		mult4x4(viewProjection, projection, view);
-
+	
 		shad.update(lightPos);
-		// ------ draw floor -----
-		glUseProgram(textureProgram);
-		glUniform1i(texSamplerLoc, 0);
+		// ------ draw floor  with new PBR -----
+		
+		glUseProgram(pbrProgram);
+		// texture
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, idTexture);
-		glUniformMatrix4fv(texVpLoc, 1, GL_FALSE, viewProjection);
-		glUniformMatrix4fv(texModelLoc, 1, GL_FALSE, modelFloor);
-		glUniform3fv(texLightLoc, 1, lightPos); 	
 		// normal mapping
-		glUniform1i(normalSamplerLoc, 1);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, idNormal);
+		// roughness
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, idRoughness);
+		// AO
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, idAO);
 
+		glUniform3fv(pbrViewPosLoc, 1, camPos);  
+
+		
+		glUniform1f(pbrMetallicLoc, metallic);   // M-key slider
+		
+		glUniformMatrix4fv(pbrVpLoc, 1, GL_FALSE, viewProjection);
+		glUniformMatrix4fv(pbrModelLoc, 1, GL_FALSE, modelFloor);
+
+		glUniform3fv(pbrLightLoc, 1, lightPos); 	
 
 		glBindVertexArray(VAOFloor);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -364,7 +391,7 @@ int main(){
 		// ----- cube/shadow drawing -----
 		glUseProgram(shaderProgram);
 		glUniformMatrix4fv(basicVpLoc, 1, GL_FALSE, viewProjection);
-		glUniformMatrix4fv(BasicmodelLoc, 1, GL_FALSE, modelCube);
+		glUniformMatrix4fv(basicModelLoc, 1, GL_FALSE, modelCube);
 		glUniform3fv(basicLightLoc, 1, lightPos); 	
 		shad.draw();
 		cube.draw();
@@ -378,7 +405,7 @@ int main(){
 		glUniform1f(quadExposureLoc, exposure);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texHDR);
-		glUniform1i(quadSamplerLoc, 0);    // test rig: floor texture already on unit 0
+		glUniform1i(quadHDRLoc, 0);    // test rig: floor texture already on unit 0
 		glBindVertexArray(VAOQuad);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glEnable(GL_DEPTH_TEST);           // restore for next frame's scene

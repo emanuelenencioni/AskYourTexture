@@ -87,6 +87,10 @@ void Camera::getViewMatrix(float out[16]) {
 
 
 
+void Camera::getPosition(float out[3]) {
+    for(int i=0; i<3; i++) out[i] = position[i];
+}
+
 void Camera::getFront(float out[3]){ 
     // trig: (cosY*cosP, sinP, sinY*cosP)
 

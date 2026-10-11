@@ -14,6 +14,7 @@ public:
     void processKeyboard(int key, float dt);
 
     void getViewMatrix(float out[16]); // TODO: transplant your f/r/s code from main.cpp:182-200
+    void getPosition(float out[3]);    // world-space eye — needed by PBR FS (viewPos uniform)
 
 private:
     // TODO — state you OWN (can't be derived);
