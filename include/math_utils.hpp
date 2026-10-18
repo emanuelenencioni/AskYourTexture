@@ -44,5 +44,22 @@ void inline computeTangent(const float p0[3], const float p1[3], const float p2[
 	normalize(outB);
 }
 
+inline void lookAt(const float eye[3], const float target[3], const float up[3], float out[16]) {
+        float f[3] = { target[0] - eye[0], target[1] - eye[1], target[2] - eye[2] };
+        normalize(f);
+
+        float r[3];
+        cross(r, f, up);
+        normalize(r);
+
+        float u[3];
+        cross(u, r, f);
+
+        out[0] = r[0];  out[4] = r[1];  out[8]  = r[2];  out[12] = -(r[0]*eye[0] + r[1]*eye[1] + r[2]*eye[2]);
+        out[1] = u[0];  out[5] = u[1];  out[9]  = u[2];  out[13] = -(u[0]*eye[0] + u[1]*eye[1] + u[2]*eye[2]);
+        out[2] = -f[0]; out[6] = -f[1]; out[10] = -f[2]; out[14] =  (f[0]*eye[0] + f[1]*eye[1] + f[2]*eye[2]);
+        out[3] = 0.0f;  out[7] = 0.0f;  out[11] = 0.0f;  out[15] = 1.0f;
+    }
+
 
 #endif

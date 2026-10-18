@@ -208,5 +208,53 @@ void main() {
     // TODO 6 — output LINEAR (HDR pass; tone mapping lives in the quad):
     Lo *= ao;   // (AO shades the indirect/ambient term — apply per plan)
     FragColor = vec4(Lo, 1.0);
-}
+    }
+)";
+
+
+const char* vertexEquirectangular = R"(
+    #version 330 core
+    layout (location = 0) in vec3 aPos;
+
+    out vec3 localPos;
+
+    uniform mat4 projection;
+    uniform mat4 view;
+
+    void main() {
+        localPos = aPos;
+        // Standard projection * view transformation:
+        gl_Position = projection * view * vec4(localPos, 1.0);
+    }
+)";
+
+const char* fragmentEquirectangular = R"(
+    #version 330 core
+    out vec4 FragColor;
+    in vec3 localPos;
+
+    uniform sampler2D equirectangularMap;
+
+    const vec2 invAtan = vec2(0.1591549, 0.3183098); // 1/(2*PI), 1/PI
+
+    vec2 SampleSphericalMap(vec3 v) {
+        // TODO 1: compute the horizontal angle (atan) from v.z and v.x
+        // TODO 2: compute the vertical angle (asin) from v.y
+        // TODO 3: scale by invAtan and offset by 0.5 to land in [0.0, 1.0] range
+
+        vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+        uv = uv * invAtan + 0.5;
+        return uv;
+    }
+
+    void main() {
+        // Normalize the ray direction:
+        vec3 v = normalize(localPos);
+
+        // Sample using the spherical UV coordinates:
+        vec2 uv = SampleSphericalMap(v);
+        vec3 color = texture(equirectangularMap, uv).rgb;
+
+        FragColor = vec4(color, 1.0);
+    }
 )";
