@@ -258,3 +258,46 @@ const char* fragmentEquirectangular = R"(
         FragColor = vec4(color, 1.0);
     }
 )";
+
+
+
+// ----- SKYBOX SHADERS -----
+
+    const char* vertexSkybox = R"(
+    #version 330 core
+    layout (location = 0) in vec3 aPos;
+
+    out vec3 TexCoords;
+
+    uniform mat4 projection;
+    uniform mat4 view;
+
+    void main() {
+        TexCoords = aPos;
+
+        // Strip camera translation (keep rotation only so skybox stays at infinity):
+        mat4 rotView = mat4(mat3(view));
+        vec4 clipPos = projection * rotView * vec4(aPos, 1.0);
+
+        // Set z to equal w (xyww) so that after perspective division (z/w),
+        // the depth is exactly 1.0, cant get close to it.
+        gl_Position = clipPos.xyww;
+    }
+    )";
+
+    const char* fragmentSkybox = R"(
+    #version 330 core
+    out vec4 FragColor;
+    in vec3 TexCoords;
+
+    uniform samplerCube skybox;
+
+    void main() {
+        // TODO 2: Sample the cubemap using TexCoords (3D direction vector)
+        vec3 envColor = texture(skybox, TexCoords).rgb;
+
+        FragColor = vec4(envColor, 1.0);
+    }
+    )";
+
+

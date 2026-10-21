@@ -62,6 +62,7 @@ int main(){
 	unsigned int quadProgram = generateProgram(&vertexShaderQuad, &fragmentShaderQuad);
 	unsigned int pbrProgram = generateProgram(&vertexShaderPBR, &fragmentShaderPBR);
 	unsigned int equiProgram = generateProgram(&vertexEquirectangular, &fragmentEquirectangular);
+	unsigned int skyboxProgram = generateProgram(&vertexSkybox, &fragmentSkybox);
 // ----- STUFF IN THE SCENE -----
 
 	// CUBE now has a class
@@ -354,6 +355,11 @@ int main(){
 	// realtime exposure selection
 	float exposure = 1.0f;
 	GLint quadExposureLoc = glGetUniformLocation(quadProgram, "uExposure");
+
+	// Skybox locs
+	GLint skyProjLoc = glGetUniformLocation(skyboxProgram, "projection");
+    GLint skyViewLoc = glGetUniformLocation(skyboxProgram, "view");
+    GLint skyMapLoc  = glGetUniformLocation(skyboxProgram, "skybox");
 	
 	// loop
 	while(!glfwWindowShouldClose(window)){
@@ -451,6 +457,21 @@ int main(){
 		glUniform3fv(basicLightLoc, 1, lightPos); 	
 		shad.draw();
 		cube.draw();
+
+
+		// Skybox
+		glDepthFunc(GL_LEQUAL); // let depth == 1.0 pass
+		glUseProgram(skyboxProgram);
+		glUniformMatrix4fv(skyProjLoc, 1, GL_FALSE, projection);
+		glUniformMatrix4fv(skyViewLoc, 1, GL_FALSE, view);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+		glUniform1i(skyMapLoc, 0);
+
+		cube.draw();
+
+		glDepthFunc(GL_LESS); // restore standard depth testing
 		
 		//glUniform1f(gammaLoc, gammaOn ? 1.0f : 0.0f);      // for shaderProgram users (cube/shadow)
 
@@ -552,6 +573,7 @@ int loadHDR(const std::string& path) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);   // ← NOT REPEAT
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);   //   (fullscreen quad touches 0 and 1 exactly)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	stbi_image_free(data);
 	return hdrTexture;
