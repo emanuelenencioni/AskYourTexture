@@ -15,6 +15,8 @@ add_executable(AskYourTexture
     src/stb_image.cpp
     src/shaders.cpp
     src/camera.cpp
+    src/opengl_utils.cpp
+    src/ibl.cpp
 )
 
 target_include_directories(AskYourTexture PRIVATE include)

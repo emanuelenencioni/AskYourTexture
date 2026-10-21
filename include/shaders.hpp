@@ -10,9 +10,7 @@ extern const char* fragmentShaderQuad;
 extern const char* vertexShaderPBR;
 extern const char* fragmentShaderPBR;
 
-extern const char* vertexEquirectangular;
-extern const char* fragmentEquirectangular;
-
 extern const char* vertexSkybox;
 extern const char* fragmentSkybox;
+
 #endif
