@@ -13,6 +13,7 @@
 #include "math_utils.hpp"
 #include "camera.hpp"
 #include "opengl_utils.hpp"
+#include "ibl.hpp"
 
 
 #define ROTATING_SUN 0
@@ -196,26 +197,9 @@ int main(){
 	
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);   // ← back to the default framebuffer; render loop untouched for now
 
-	
-	// Irradiance
-
-    GLint irrProjLoc = glGetUniformLocation(irradianceProgram, "projection");
-    GLint irrViewLoc = glGetUniformLocation(irradianceProgram, "view");
-    GLint irrMapLoc  = glGetUniformLocation(irradianceProgram, "environmentMap");
-
-	unsigned int irradianceMap;
-    glGenTextures(1, &irradianceMap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
-    for (int i = 0; i < 6; ++i) {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 32, 32, 0, GL_RGB, GL_FLOAT, NULL);
-	}
-	
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
+	IBLSystem ibl = IBLSystem("../assets/aarfontein_sunrise_16k.hdr");
+	ibl.bake(cube);
+	glViewport(0,0,window_x_size,window_y_size); //always after ibl.bake
 
 	float aspect_ratio = window_x_size / window_y_size;
 	
@@ -425,7 +409,7 @@ int main(){
 		glUniformMatrix4fv(skyViewLoc, 1, GL_FALSE, view);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl.getEnvCubemap());
 		glUniform1i(skyMapLoc, 0);
 
 		cube.draw();
