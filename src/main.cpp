@@ -53,7 +53,6 @@ int main(){
 	unsigned int shaderProgram = generateProgram(&vertexShaderSource, &fragmentShaderSource);
 	unsigned int quadProgram = generateProgram(&vertexShaderQuad, &fragmentShaderQuad);
 	unsigned int pbrProgram = generateProgram(&vertexShaderPBR, &fragmentShaderPBR);
-	unsigned int equiProgram = generateProgram(&vertexEquirectangular, &fragmentEquirectangular);
 	unsigned int skyboxProgram = generateProgram(&vertexSkybox, &fragmentSkybox);
 // ----- STUFF IN THE SCENE -----
 
@@ -197,57 +196,25 @@ int main(){
 	
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);   // ← back to the default framebuffer; render loop untouched for now
 
-	// IBL
-	int hdrTexture = loadHDR("../assets/aarfontein_sunrise_16k.hdr");
-	unsigned int envCubemap;
-	glGenTextures(1, &envCubemap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-	// allocating each face as 2D image
-	for(int i=0;i<6;i++){
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0,  GL_RGB, GL_FLOAT, NULL);
-	}
+	
+	// Irradiance
 
+    GLint irrProjLoc = glGetUniformLocation(irradianceProgram, "projection");
+    GLint irrViewLoc = glGetUniformLocation(irradianceProgram, "view");
+    GLint irrMapLoc  = glGetUniformLocation(irradianceProgram, "environmentMap");
+
+	unsigned int irradianceMap;
+    glGenTextures(1, &irradianceMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+    for (int i = 0; i < 6; ++i) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 32, 32, 0, GL_RGB, GL_FLOAT, NULL);
+	}
+	
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	unsigned int captureFBO, captureRBO;
-    glGenFramebuffers(1, &captureFBO);
-    glGenRenderbuffers(1, &captureRBO);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
-	glViewport(0,0,512,512);
-	glUseProgram(equiProgram);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, hdrTexture);
-	GLint equiMapLoc = glGetUniformLocation(equiProgram, "equirectangularMap");
-	glUniform1i(equiMapLoc, 0);
-	
-	
-	float captureProjection[16];
-	perspective(captureProjection, M_PI / 2.0f, 1.0f, 0.1f, 10.0f);
-	float captureViews[6][16];
-
-	GLint equiProjLoc = glGetUniformLocation(equiProgram, "projection");
-	glUniformMatrix4fv(equiProjLoc, 1, GL_FALSE, captureProjection);
-	
-	GLint equiViewLoc = glGetUniformLocation(equiProgram, "view");
-	// "Bake" loop
-	for(int i=0;i<6;i++){
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envCubemap, 0);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		lookAt(eyeIBL, targetsIBL[i], upsIBL[i], captureViews[i]); // IBL variables can be found in ibl_utils.hpp
-		glUniformMatrix4fv(equiViewLoc, 1, GL_FALSE, captureViews[i]);	
-		cube.draw();
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(0,0,window_x_size, window_y_size);
 
 
 	float aspect_ratio = window_x_size / window_y_size;

@@ -30,19 +30,14 @@ IBLSystem::IBLSystem(const std::string& path): hdrPath(path) {
     hdrTexture = loadHDR(hdrPath);
     irradianceProgram = generateProgram(&vertexEquirectangular, &fragmentIrradiance);
     equiProgram = generateProgram(&vertexEquirectangular, &fragmentEquirectangular);
-    setupFramebuffers();
+    
+    // setupFramebuffers
+    glGenFramebuffers(1, &captureFBO);
+    glGenRenderbuffers(1, &captureRBO);
 }
 IBLSystem::~IBLSystem() {
     glDeleteFramebuffers(1, &captureFBO);
     glDeleteRenderbuffers(1, &captureRBO);
-}
-
-void IBLSystem::setupFramebuffers() {
-    glGenFramebuffers(1, &captureFBO);
-    glGenRenderbuffers(1, &captureRBO);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
 }
 
 void IBLSystem::bake(const Cube& cube) {
@@ -52,28 +47,40 @@ void IBLSystem::bake(const Cube& cube) {
 
 void IBLSystem::bakeEquirectangular(const Cube& cube) {
     glUseProgram(equiProgram);
+    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, hdrTexture);
     glUniform1i(glGetUniformLocation(equiProgram, "equirectangularMap"), 0);
 
-    bake(cube, envCubemap, 512, equiProgram);
+    bake(cube, envCubemap, 512, equiProgram, 1);
 }
 
 // params: cube_size, program
 void IBLSystem::bakeIrradiance(const Cube& cube) {
     glUseProgram(irradianceProgram);
-    glActiveTexture(GL_TEXTURE0);
+    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+    glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-    glUniform1i(glGetUniformLocation(irradianceProgram, "environmentMap"), 0);
+    glUniform1i(glGetUniformLocation(irradianceProgram, "environmentMap"), 1);
 
-    bake(cube, irradianceMap, 32, irradianceProgram);
+    bake(cube, irradianceMap, 32, irradianceProgram, 2);
 }
-
-void IBLSystem::bake(const Cube& cube, unsigned int &cubemap, const unsigned int cube_size, const unsigned int program) {
+/**
+ * @brief 
+ * 
+ * @param cube 
+ * @param cubemap 
+ * @param cube_size 
+ * @param program 
+ * @param destIdx texture index of the source texture
+ */
+void IBLSystem::bake(const Cube& cube, unsigned int &cubemap, const unsigned int cube_size, const unsigned int program,  const unsigned int srcIdx) {
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, cube_size, cube_size);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
-	
-    glGenTextures(1, &cubemap);
+	glActiveTexture(GL_TEXTURE0 + srcIdx);
+    glGenTextures(srcIdx, &cubemap);
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
 	// allocating each face as 2D image
 	for(int i=0;i<6;i++){

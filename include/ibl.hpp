@@ -43,10 +43,9 @@ private:
     unsigned int irradianceProgram;
 
     // internal helpers
-    void setupFramebuffers();
     void bakeEquirectangular(const Cube& cube);
     void bakeIrradiance(const Cube& cube);
-    void bake(const Cube& cube, unsigned int &cubemap, const unsigned int cube_size, const unsigned int program);
+    void bake(const Cube& cube, unsigned int &cubemap, const unsigned int cube_size, const unsigned int program, const unsigned int srcIdx);
 
 
 };
