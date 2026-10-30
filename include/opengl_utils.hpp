@@ -2,6 +2,7 @@
 #define OPENGL_UTILS_HPP
 
 #include <string>
+#include <math.h>
 
 unsigned int generateProgram(const char** vertexShader, const char** fragmentShader);
 bool checkShader(unsigned int shader);
