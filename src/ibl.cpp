@@ -80,11 +80,11 @@ void IBLSystem::bake(const Cube& cube, unsigned int &cubemap, const unsigned int
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, cube_size, cube_size);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
 	glActiveTexture(GL_TEXTURE0 + srcIdx);
-    glGenTextures(srcIdx, &cubemap);
+    glGenTextures(1, &cubemap);
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
 	// allocating each face as 2D image
 	for(int i=0;i<6;i++){
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, cube_size, cube_size, 0,  GL_RGB, GL_FLOAT, NULL);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB32F, cube_size, cube_size, 0,  GL_RGB, GL_FLOAT, NULL);
 	}
 	// texture sampling configs -> first 3 avoid to do warp-aroud, the latest 2  set bilinear
 	//  interpolation for magnification and minification (texel appear larger or smaller on screen)
@@ -172,6 +172,8 @@ const char* fragmentEquirectangular = R"(
             vec2 uv = SampleSphericalMap(v);
             vec3 color = texture(equirectangularMap, uv).rgb;
 
+            color = clamp(color, vec3(0.0), vec3(500.0));
+
             FragColor = vec4(color, 1.0);
         }
 )";
@@ -207,7 +209,7 @@ const char* fragmentIrradiance = R"(
         vec3 irradiance = vec3(0.0);
 
         // Tangent space basis around N:
-        vec3 up    = vec3(0.0, 1.0, 0.0);
+        vec3 up    = abs(N.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
         vec3 right = normalize(cross(up, N));
         up         = normalize(cross(N, right));
 

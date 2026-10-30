@@ -197,7 +197,7 @@ int main(){
 	
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);   // ← back to the default framebuffer; render loop untouched for now
 
-	IBLSystem ibl = IBLSystem("../assets/aarfontein_sunrise_16k.hdr");
+	IBLSystem ibl = IBLSystem("../assets/meadow_2_16k.hdr");
 	ibl.bake(cube);
 	glViewport(0,0,window_x_size,window_y_size); //always after ibl.bake
 
@@ -233,13 +233,14 @@ int main(){
 	GLint pbrNormalLoc = glGetUniformLocation(pbrProgram, "normalTexture");
 	GLint pbrRoughnessLoc = glGetUniformLocation(pbrProgram, "roughnessTexture");
 	GLint pbrAoLoc = glGetUniformLocation(pbrProgram, "aoTexture");
+	GLint pbrIrradiance = glGetUniformLocation(pbrProgram, "irradianceMap");
 
 	glUseProgram(pbrProgram);
 	glUniform1i(pbrAlbedoLoc, 0);
 	glUniform1i(pbrNormalLoc, 1);
 	glUniform1i(pbrRoughnessLoc, 2);
 	glUniform1i(pbrAoLoc, 3);
-		
+	glUniform1i(pbrIrradiance, 4);
 
 	// light source!
 	float lightPos[3] = {5.0f, 5.0f, 5.0f};
@@ -377,6 +378,10 @@ int main(){
 		// AO
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, idAO);
+
+		// binding irradiance map to floor too
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl.getIrradianceMap());
 
 		glUniform3fv(pbrViewPosLoc, 1, camPos);  
 

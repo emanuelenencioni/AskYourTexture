@@ -123,25 +123,22 @@ in vec3 worldTangent;
 in vec3 worldBitangent;
 in vec2 textCoord;
 
-uniform sampler2D albedoTexture;    // sRGB PNG → decode 2.2
-uniform sampler2D normalTexture;    // tangent-space, raw
-uniform sampler2D roughnessTexture; // .r channel, raw
-uniform sampler2D aoTexture;        // .r channel, raw
+uniform samplerCube irradianceMap;
+uniform sampler2D albedoTexture;   
+uniform sampler2D normalTexture;    
+uniform sampler2D roughnessTexture; 
+uniform sampler2D aoTexture;       
 uniform vec3 lightPos;
-uniform vec3 viewPos;               // NEW: needed for V — wire camera in main.cpp (Task 4)
-uniform float uMetallic;            // M-key slider (Task 4)
-
+uniform vec3 viewPos;              
+uniform float uMetallic;         
 out vec4 FragColor;
 
-// ----- BRDF helpers: port of pbr.hpp (tested C++, same formulas) -----
 
 vec3 f0_metallicMix(vec3 albedo, float metallic) {
     return vec3(DIELECTRIC_F0) + metallic * (albedo - vec3(DIELECTRIC_F0));
 }
 
 vec3 f_schlick(float VdotH, vec3 F0) {
-    // clamp INSIDE pow: GLSL pow(negative, 5.0) is undefined → NaN/fireflies.
-    // (C++ contract leaves clamping to the caller; here we harden the helper.)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - VdotH, 0.0, 1.0), 5.0);
 }
 
@@ -165,26 +162,15 @@ float g_smith(float NdotV, float NdotL, float roughness) {
 // ----- per-pixel assembly: TODO (your port) -----
 
 void main() {
-    // TODO 1 — sample the material maps:
-    //   albedo    = sRGB decode of albedoTexture (pow 2.2, same as fragmentShaderTexture)
-    //   roughness = roughnessTexture .r   (raw — linear data, NO decode)
-    //   ao        = aoTexture .r          (raw)
-    //   metallic  = uMetallic
-
     vec3 albedo = pow(texture(albedoTexture, textCoord).rgb, vec3(2.2));
     float roughness = texture(roughnessTexture, textCoord).r;
     float ao = texture(aoTexture, textCoord).r;
     float metallic = uMetallic;
 
-
-    // TODO 2 — world normal from the map (you own this already, fragmentShaderTexture):
-    //   n_t raw *2-1 → mat3(T,B,N) → normalize
-
     vec2 tiledUV = textCoord;
     vec3 n_t = texture(normalTexture, tiledUV).xyz * 2.0 - 1.0; 
     vec3 n  = normalize (mat3(worldTangent,worldBitangent,worldNormal)*n_t);
 
-    // TODO 3 — shading vectors (NEW: viewPos):
     vec3 l = normalize(lightPos - worldPos);
     vec3 v = normalize(viewPos  - worldPos);      // ← the only genuinely new vector
     vec3 h = normalize(l + v);
@@ -193,26 +179,25 @@ void main() {
     float NdotH = max(dot(n,h), 1e-4);
     float NdotL = max(dot(n,l), 1e-4);
 
-    // TODO 4 — BRDF terms (CLAMP at call site: max(dot(...), 1e-4) for every NdotX):
     vec3 F0 = f0_metallicMix(albedo, metallic);
     vec3 F = f_schlick(dot(v,h), F0);
     float   D  = d_ggx(NdotH, roughness);
     float  G  = g_smith(NdotV, NdotL, roughness);
 
-    // TODO 5 — assemble Cook-Torrance for ONE light:
     vec3 radiance = vec3(1.0); // (white sun; scale later if you want)
     vec3 specular = D * G * F / (4 * NdotV * NdotL);
     vec3 kD = (1 - F) * (1 - metallic);
     vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL;
 
-    // TODO 6 — output LINEAR (HDR pass; tone mapping lives in the quad):
-    Lo *= ao;   // (AO shades the indirect/ambient term — apply per plan)
-    FragColor = vec4(Lo, 1.0);
+    vec3 irradiance = texture(irradianceMap, n).rgb;
+    vec3 diffuse = irradiance*albedo;
+    vec3 ambient = (kD * diffuse) * ao * 0.2;
+
+    Lo *= ao; 
+    vec3 color = ambient + Lo;
+    FragColor = vec4(color, 1.0);
     }
 )";
-
-
-
 
 
 // ----- SKYBOX SHADERS -----
@@ -253,5 +238,3 @@ void main() {
         FragColor = vec4(envColor, 1.0);
     }
     )";
-
-
