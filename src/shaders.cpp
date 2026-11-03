@@ -233,7 +233,7 @@ void main() {
 
     void main() {
         // TODO 2: Sample the cubemap using TexCoords (3D direction vector)
-        vec3 envColor = texture(skybox, TexCoords).rgb;
+        vec3 envColor = textureLod(skybox, TexCoords, 0.0).rgb;
 
         FragColor = vec4(envColor, 1.0);
     }
