@@ -125,6 +125,11 @@ in vec3 worldTangent;
 in vec3 worldBitangent;
 in vec2 textCoord;
 
+uniform float uMetallic;         
+
+uniform vec3 lightPos;
+uniform vec3 viewPos;    
+
 uniform samplerCube irradianceMap;
 uniform sampler2D albedoTexture;   
 uniform sampler2D normalTexture;    
@@ -134,9 +139,8 @@ uniform sampler2D aoTexture;
 uniform samplerCube prefilterMap;
 uniform sampler2D   brdfLUT; 
 
-uniform vec3 lightPos;
-uniform vec3 viewPos;              
-uniform float uMetallic;         
+uniform mat3 uEnvRotation;
+
 out vec4 FragColor;
 
 
@@ -200,12 +204,12 @@ void main() {
     vec3 kD = (1 - F) * (1 - metallic);
     vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL;
 
-    vec3 irradiance = texture(irradianceMap, n).rgb;
+    vec3 irradiance = texture(irradianceMap, uEnvRotation * n).rgb;
     vec3 diffuse = irradiance*albedo;
 
     vec3 R = reflect(-v, n);
     vec3 F_ambient = f_schlick_roughness(max(dot(n, v), 0.0), F0, roughness);
-    vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+    vec3 prefilteredColor = textureLod(prefilterMap, uEnvRotation * R, roughness * MAX_REFLECTION_LOD).rgb;
     vec2 brdf = texture(brdfLUT, vec2(max(dot(n, v), 0.0), roughness)).rg;
 
     vec3 specularIBL = prefilteredColor * (F_ambient * brdf.x + brdf.y);
@@ -251,11 +255,12 @@ void main() {
     out vec4 FragColor;
     in vec3 TexCoords;
 
+    uniform mat3 uEnvRotation;
     uniform samplerCube skybox;
 
     void main() {
         // TODO 2: Sample the cubemap using TexCoords (3D direction vector)
-        vec3 envColor = textureLod(skybox, TexCoords, 0.0).rgb;
+        vec3 envColor = textureLod(skybox, uEnvRotation * TexCoords, 0.0).rgb;
 
         FragColor = vec4(envColor, 1.0);
     }

@@ -22,6 +22,7 @@
 
 //just an helper
 void mult4x4(float* out, const float* a, const float* b);
+void angle_to_rot_matrix_y(float theta, float rot[9]);
 
 int main(){
 	float window_x_size = 1280;
@@ -236,6 +237,8 @@ int main(){
 	GLint pbrIrradiance = glGetUniformLocation(pbrProgram, "irradianceMap");
 	GLint pbrPrefilterLoc = glGetUniformLocation(pbrProgram, "prefilterMap");
     GLint pbrBrdfLUTLoc   = glGetUniformLocation(pbrProgram, "brdfLUT");
+	GLint pbrEnvRotationLoc = glGetUniformLocation(pbrProgram, "uEnvRotation");
+
 
 	glUseProgram(pbrProgram);
 	glUniform1i(pbrAlbedoLoc, 0);
@@ -308,14 +311,15 @@ int main(){
 	GLint skyProjLoc = glGetUniformLocation(skyboxProgram, "projection");
     GLint skyViewLoc = glGetUniformLocation(skyboxProgram, "view");
     GLint skyMapLoc  = glGetUniformLocation(skyboxProgram, "skybox");
-	
+	GLint skyEnvRotationLoc = glGetUniformLocation(skyboxProgram, "uEnvRotation");
+
+	float rotMat[9];
 	// loop
 	while(!glfwWindowShouldClose(window)){
 		glBindFramebuffer(GL_FRAMEBUFFER, fboHDR); // HDR
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		
 
 		t = glfwGetTime();
 		dt = t - lastT;
@@ -328,7 +332,9 @@ int main(){
 		gWasPressed = gPressed;
 // ----- INPUT HANDLING -----
 	//  ----- ORBITING VIEW CALCULATION -----
-		
+		// ambient light orbiting
+		angle_to_rot_matrix_y(speed * t, rotMat);
+
 		//camera orbiting
 		glfwGetCursorPos(window, &mouseX, &mouseY);
 		cam.processMouse(mouseX, mouseY);
@@ -395,6 +401,9 @@ int main(){
 
 		glUniform3fv(pbrViewPosLoc, 1, camPos);  
 
+		glUniformMatrix3fv(pbrEnvRotationLoc, 1, GL_FALSE, rotMat);
+
+
 		
 		glUniform1f(pbrMetallicLoc, metallic);   // M-key slider
 		
@@ -427,6 +436,9 @@ int main(){
 		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl.getEnvCubemap());
 		glUniform1i(skyMapLoc, 0);
 
+		glUniformMatrix3fv(skyEnvRotationLoc, 1, GL_FALSE, rotMat);
+
+
 		cube.draw();
 
 		glDepthFunc(GL_LESS); // restore standard depth testing
@@ -456,7 +468,11 @@ int main(){
 }
 
 
-
+void angle_to_rot_matrix_y(float theta, float rot[9]) {
+	rot[0] =  cos(theta); rot[1] = 0.0f; rot[2] = -sin(theta);
+    rot[3] =  0.0f;       rot[4] = 1.0f; rot[5] =  0.0f;
+    rot[6] =  sin(theta); rot[7] = 0.0f; rot[8] =  cos(theta);
+}
 
 
 void mult4x4(float* out, const float* a, const float* b) {
