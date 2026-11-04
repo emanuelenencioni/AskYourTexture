@@ -60,31 +60,37 @@ void Camera::processKeyboard(int key, float dt) {
 
 }
 void Camera::getViewMatrix(float out[16]) {
-    float f[3]; //front
+    float f[3];
     float s[3], r[3];
+
     getFront(f);
     normalize(f);
-    // up x f
-    r[0] = worldUp[1]*f[2] -worldUp[2]*f[1];
+    // Compute camera Right vector (cross product of worldUp and f)
+    r[0] = worldUp[1]*f[2] - worldUp[2]*f[1];
     r[1] = worldUp[2]*f[0] - worldUp[0]*f[2];
     r[2] = worldUp[0]*f[1] - worldUp[1]*f[0];
-    // f x r
-    s[0] = f[1]*r[2] - f[2]*r[1];
 
+    normalize(r);
+
+    // Compute camera Up vector (cross product of f and r)
+    s[0] = f[1]*r[2] - f[2]*r[1];
     s[1] = f[2]*r[0] - f[0]*r[2];
     s[2] = f[0]*r[1] - f[1]*r[0];
 
-    out[0]=r[0]; out[4]=r[1]; out[8]=r[2];
-    out[1]=s[0]; out[5]=s[1]; out[9]=s[2];
-    out[2]=-f[0]; out[6]=-f[1]; out[10]=-f[2];
-    out[3]=0; out[7]=0; out[11]=0;
-    out[12] = -( r[0]*position[0] + r[1]*position[1] + r[2]*position[2] );   // -dot(r, position)
-    out[13] = -( s[0]*position[0] + s[1]*position[1] + s[2]*position[2] );   // -dot(s, position)
-    out[14] =  ( f[0]*position[0] + f[1]*position[1] + f[2]*position[2] );   // +dot(f, eye)
-    
-}
-// TODO: transplant your f/r/s code from main.cpp:182-200
+    normalize(s);
 
+    // Basis vectors into 4x4 matrix (column-major)
+    out[0]=r[0];  out[4]=r[1];  out[8]=r[2];
+    out[1]=s[0];  out[5]=s[1];  out[9]=s[2];
+    out[2]=-f[0]; out[6]=-f[1]; out[10]=-f[2];
+    out[3]=0.0f;  out[7]=0.0f;  out[11]=0.0f;
+
+    // Translation components
+    out[12] = -( r[0]*position[0] + r[1]*position[1] + r[2]*position[2] );
+    out[13] = -( s[0]*position[0] + s[1]*position[1] + s[2]*position[2] );
+    out[14] =  ( f[0]*position[0] + f[1]*position[1] + f[2]*position[2] );
+    out[15] = 1.0;
+}
 
 
 void Camera::getPosition(float out[3]) {

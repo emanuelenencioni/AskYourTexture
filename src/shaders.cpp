@@ -116,6 +116,8 @@ const char* fragmentShaderPBR = R"(
 
 const float PI = 3.14159265359;
 const float DIELECTRIC_F0 = 0.04;
+const float MAX_REFLECTION_LOD = 4.0;
+
 
 in vec3 worldPos;
 in vec3 worldNormal;
@@ -128,6 +130,10 @@ uniform sampler2D albedoTexture;
 uniform sampler2D normalTexture;    
 uniform sampler2D roughnessTexture; 
 uniform sampler2D aoTexture;       
+
+uniform samplerCube prefilterMap;
+uniform sampler2D   brdfLUT; 
+
 uniform vec3 lightPos;
 uniform vec3 viewPos;              
 uniform float uMetallic;         
@@ -140,6 +146,11 @@ vec3 f0_metallicMix(vec3 albedo, float metallic) {
 
 vec3 f_schlick(float VdotH, vec3 F0) {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - VdotH, 0.0, 1.0), 5.0);
+}
+
+// new version of f_schlick. Take in consideration indirect ambient light (Lagarde problem)
+vec3 f_schlick_roughness(float cosTheta, vec3 F0, float roughness) {
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 float d_ggx(float NdotH, float roughness) {
@@ -191,7 +202,18 @@ void main() {
 
     vec3 irradiance = texture(irradianceMap, n).rgb;
     vec3 diffuse = irradiance*albedo;
-    vec3 ambient = (kD * diffuse) * ao * 0.2;
+
+    vec3 R = reflect(-v, n);
+    vec3 F_ambient = f_schlick_roughness(max(dot(n, v), 0.0), F0, roughness);
+    vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf = texture(brdfLUT, vec2(max(dot(n, v), 0.0), roughness)).rg;
+
+    vec3 specularIBL = prefilteredColor * (F_ambient * brdf.x + brdf.y);
+
+    vec3 kS = F_ambient;
+    vec3 kD_ambient = (1.0 - kS) * (1.0 - metallic);
+    vec3 ambient = (kD_ambient * diffuse + specularIBL) * ao;
+
 
     Lo *= ao; 
     vec3 color = ambient + Lo;

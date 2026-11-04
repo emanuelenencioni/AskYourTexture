@@ -234,6 +234,8 @@ int main(){
 	GLint pbrRoughnessLoc = glGetUniformLocation(pbrProgram, "roughnessTexture");
 	GLint pbrAoLoc = glGetUniformLocation(pbrProgram, "aoTexture");
 	GLint pbrIrradiance = glGetUniformLocation(pbrProgram, "irradianceMap");
+	GLint pbrPrefilterLoc = glGetUniformLocation(pbrProgram, "prefilterMap");
+    GLint pbrBrdfLUTLoc   = glGetUniformLocation(pbrProgram, "brdfLUT");
 
 	glUseProgram(pbrProgram);
 	glUniform1i(pbrAlbedoLoc, 0);
@@ -241,6 +243,8 @@ int main(){
 	glUniform1i(pbrRoughnessLoc, 2);
 	glUniform1i(pbrAoLoc, 3);
 	glUniform1i(pbrIrradiance, 4);
+	glUniform1i(pbrPrefilterLoc, 5);
+    glUniform1i(pbrBrdfLUTLoc,   6);
 
 	// light source!
 	float lightPos[3] = {5.0f, 5.0f, 5.0f};
@@ -382,6 +386,12 @@ int main(){
 		// binding irradiance map to floor too
 		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl.getIrradianceMap());
+
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl.getPrefilterMap());
+
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_2D, ibl.getBRDFLUT());
 
 		glUniform3fv(pbrViewPosLoc, 1, camPos);  
 
