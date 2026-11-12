@@ -199,7 +199,7 @@ void main() {
     float   D  = d_ggx(NdotH, roughness);
     float  G  = g_smith(NdotV, NdotL, roughness);
 
-    vec3 radiance = vec3(1.0); // (white sun; scale later if you want)
+    vec3 radiance = vec3(0.0); // (white sun; scale later if you want)
     vec3 specular = D * G * F / (4 * NdotV * NdotL);
     vec3 kD = (1 - F) * (1 - metallic);
     vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL;

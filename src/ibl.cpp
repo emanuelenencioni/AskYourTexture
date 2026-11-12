@@ -34,6 +34,9 @@ IBLSystem::IBLSystem(const std::string& path): hdrPath(path) {
     // setupFramebuffers
     glGenFramebuffers(1, &captureFBO);
     glGenRenderbuffers(1, &captureRBO);
+
+    quadVAO = 0;
+    quadVBO = 0;
 }
 IBLSystem::~IBLSystem() {
     glDeleteFramebuffers(1, &captureFBO);
@@ -61,7 +64,7 @@ void IBLSystem::bakeEquirectangular(const Cube& cube) {
 void IBLSystem::bakeIrradiance(const Cube& cube) {
     glUseProgram(irradianceProgram);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
     glUniform1i(glGetUniformLocation(irradianceProgram, "environmentMap"), 1);
 
     allocateCubemap(irradianceMap,32);
@@ -207,12 +210,20 @@ void IBLSystem::bakeBRDF() {
 
         // 2. Attach texture to FBO and render the quad
         glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0);
+        glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,
+        captureRBO);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+        brdfLUTTexture, 0);
 
         glViewport(0, 0, 512, 512);
         glUseProgram(brdfProgram);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glDisable(GL_DEPTH_TEST); // 2D quad doesn't need depth testing
         renderQuad();
+        glEnable(GL_DEPTH_TEST);  // restore depth testing
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
