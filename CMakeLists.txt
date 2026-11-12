@@ -17,6 +17,7 @@ add_executable(AskYourTexture
     src/camera.cpp
     src/opengl_utils.cpp
     src/ibl.cpp
+    src/sphere.cpp
 )
 
 target_include_directories(AskYourTexture PRIVATE include)
