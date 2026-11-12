@@ -7,6 +7,8 @@
 #include <chrono>
 
 #include "cube.hpp"
+#include "sphere.hpp"
+
 #include "shadow.hpp"
 #include "stb_image.h"
 #include "shaders.hpp"
@@ -61,6 +63,9 @@ int main(){
 	// CUBE now has a class
 	Cube cube;
 	cube.setupGL();
+
+	Sphere sphere;
+	sphere.setupGL();
 
 
 	float floorVertices[] = { // FLOOR
@@ -209,8 +214,11 @@ int main(){
 	float fov = M_PI/3;
 	float elev = 10*M_PI/180;//M_PI/6;
 	float viewProjection[16];
+
 	float modelFloor[16] = {0}; modelFloor[0]=1; modelFloor[5]=1; modelFloor[10]=1; modelFloor[15]=1;
 	float modelCube[16] = {0}; modelCube[0]=1; modelCube[5]=1; modelCube[10]=1; modelCube[15]=1;
+	float modelSphere[16] = {0}; modelSphere[0] = {1}; 	 modelSphere[5] = {1};  modelSphere[10] = {1};  modelSphere[15] = {1};
+
 	float view[16] = {0}; view[0]=1; view[5]=1; view[10]=1; view[15]=1;
 	float projection[16];
 	perspective(projection,fov,aspect_ratio,0.1, 100);
@@ -320,7 +328,6 @@ int main(){
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
 		t = glfwGetTime();
 		dt = t - lastT;
 		lastT = t;
@@ -406,6 +413,9 @@ int main(){
 
 		
 		glUniform1f(pbrMetallicLoc, metallic);   // M-key slider
+
+		glUniformMatrix4fv(pbrModelLoc,1,GL_FALSE,modelSphere);
+		sphere.draw();
 		
 		glUniformMatrix4fv(pbrVpLoc, 1, GL_FALSE, viewProjection);
 		glUniformMatrix4fv(pbrModelLoc, 1, GL_FALSE, modelFloor);
@@ -422,8 +432,9 @@ int main(){
 		glUniformMatrix4fv(basicVpLoc, 1, GL_FALSE, viewProjection);
 		glUniformMatrix4fv(basicModelLoc, 1, GL_FALSE, modelCube);
 		glUniform3fv(basicLightLoc, 1, lightPos); 	
-		shad.draw();
-		cube.draw();
+		//shad.draw();
+		//cube.draw();
+
 
 
 		// Skybox
