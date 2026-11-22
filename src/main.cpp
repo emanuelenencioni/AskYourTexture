@@ -5,6 +5,7 @@
 #include <vector>
 #include <thread>
 #include <chrono>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "cube.hpp"
 #include "sphere.hpp"
@@ -16,6 +17,7 @@
 #include "camera.hpp"
 #include "opengl_utils.hpp"
 #include "ibl.hpp"
+#include "showcase.hpp"
 
 
 #define ROTATING_SUN 0
@@ -52,6 +54,8 @@ int main(){
 	glEnable(GL_MULTISAMPLE); // MSAA
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	ShowcaseController showcase;
 
 
 	unsigned int shaderProgram = generateProgram(&vertexShaderSource, &fragmentShaderSource);
@@ -295,6 +299,8 @@ int main(){
 	// Gamma toggling
 	bool gammaOn = true;          // start corrected; pressing G dims it — or reverse, your call
 	bool gWasPressed = false;
+	bool tWasPressed = false;
+
 	
 	
 	float metallic= 0.22; bool mWasPressed = false;
@@ -332,13 +338,22 @@ int main(){
 		dt = t - lastT;
 		lastT = t;
 
+		showcase.update(dt);
+
+// ----- INPUT HANDLING -----
 		bool gPressed = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
+		bool tPressed = glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS;
+
 		if(gPressed && !gWasPressed){
 			gammaOn = !gammaOn;
 		}
 		gWasPressed = gPressed;
-// ----- INPUT HANDLING -----
-	//  ----- ORBITING VIEW CALCULATION -----
+
+		if (tPressed && !tWasPressed) {
+			showcase.toggleTurntable();
+		}
+		tWasPressed = tPressed;
+		
 		// ambient light orbiting
 		angle_to_rot_matrix_y(speed * t, rotMat);
 
@@ -357,6 +372,16 @@ int main(){
 
 		if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 			cam.processKeyboard(GLFW_KEY_D, dt);
+
+
+		if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+			showcase.requestMode(ShowcaseMode::Sphere);
+		if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+			showcase.requestMode(ShowcaseMode::Cube);
+		if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+			showcase.requestMode(ShowcaseMode::FloorOnly);
+
+		
 
 		cam.getViewMatrix(view);
 		cam.getPosition(camPos);
@@ -415,7 +440,16 @@ int main(){
 		glUniform1f(pbrMetallicLoc, metallic);   // M-key slider
 
 		glUniformMatrix4fv(pbrModelLoc,1,GL_FALSE,modelSphere);
-		sphere.draw();
+		
+
+		glm::mat4 showcaseModel = showcase.getModelMatrix();
+		glUniformMatrix4fv(pbrModelLoc, 1, GL_FALSE, glm::value_ptr(showcaseModel));
+
+		if (showcase.getActiveMode() == ShowcaseMode::Sphere) {
+			sphere.draw();
+		} else if (showcase.getActiveMode() == ShowcaseMode::Cube) {
+			cube.draw();
+		}
 		
 		glUniformMatrix4fv(pbrVpLoc, 1, GL_FALSE, viewProjection);
 		glUniformMatrix4fv(pbrModelLoc, 1, GL_FALSE, modelFloor);

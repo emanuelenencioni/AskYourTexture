@@ -64,7 +64,7 @@ void Sphere::setupGL() {
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(PBRVertex), vertices.data(),
-        GL_STATIC_DRAW);
+                    GL_STATIC_DRAW);
 
     setupPBRAttribPointers();
 
