@@ -98,15 +98,15 @@ out vec3 worldNormal;
 out vec3 worldTangent;
 out vec3 worldBitangent;
 out vec2 textCoord;
-void main()
-{
+void main() {
     gl_Position = viewProjection * model * vec4(aPos, 1.0f);
     ourColor = aColor;
-    worldPos = aPos;
-    worldNormal = aNormal;
+    worldPos = vec3(model * vec4(aPos, 1.0));;
+    mat3 normalMatrix = transpose(inverse(mat3(model)));
+    worldNormal = normalize(normalMatrix * aNormal);
     textCoord = aTextCoord;
-    worldTangent = aTangent;
-    worldBitangent = normalize(cross(aTangent, aNormal));
+    worldTangent = normalize(mat3(model) * aTangent);
+    worldBitangent = normalize(cross(worldNormal,worldTangent));
 }
 )";
 

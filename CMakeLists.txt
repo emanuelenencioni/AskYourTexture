@@ -18,6 +18,7 @@ add_executable(AskYourTexture
     src/opengl_utils.cpp
     src/ibl.cpp
     src/sphere.cpp
+    src/showcase.cpp
 )
 
 target_include_directories(AskYourTexture PRIVATE include)
@@ -30,6 +31,8 @@ target_link_libraries(AskYourTexture PRIVATE
 add_executable(tests
     tests/test_math.cpp
     tests/test_pbr.cpp
+    tests/test_showcase.cpp
+    src/showcase.cpp
 )
 
 target_include_directories(tests PRIVATE external include)
