@@ -250,6 +250,9 @@ int main(){
 	GLint pbrPrefilterLoc = glGetUniformLocation(pbrProgram, "prefilterMap");
     GLint pbrBrdfLUTLoc   = glGetUniformLocation(pbrProgram, "brdfLUT");
 	GLint pbrEnvRotationLoc = glGetUniformLocation(pbrProgram, "uEnvRotation");
+	GLint pbrDirectLightLoc = glGetUniformLocation(pbrProgram, "uDirectLightOn");
+	GLint pbrIBLLoc = glGetUniformLocation(pbrProgram, "uIBLOn");
+
 
 
 	glUseProgram(pbrProgram);
@@ -296,11 +299,14 @@ int main(){
 	Camera cam(camPos, yaw, pitch);
 	
 
-	// Gamma toggling
-	bool gammaOn = true;          // start corrected; pressing G dims it — or reverse, your call
+	bool gammaOn = true;     
 	bool gWasPressed = false;
 	bool tWasPressed = false;
+	bool lWasPressed = false;
+	bool iWasPressed = false;
 
+	bool directLightOn = true;
+	bool iblOn = true;
 	
 	
 	float metallic= 0.22; bool mWasPressed = false;
@@ -343,6 +349,10 @@ int main(){
 // ----- INPUT HANDLING -----
 		bool gPressed = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
 		bool tPressed = glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS;
+		bool lPressed = glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS;
+		bool iPressed = glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS;
+
+
 
 		if(gPressed && !gWasPressed){
 			gammaOn = !gammaOn;
@@ -353,6 +363,16 @@ int main(){
 			showcase.toggleTurntable();
 		}
 		tWasPressed = tPressed;
+
+
+		if (lPressed && !lWasPressed) {
+			directLightOn = !directLightOn;
+		}
+		lWasPressed = lPressed;
+		if (iPressed && !iWasPressed) {
+			iblOn = !iblOn;
+		}
+		iWasPressed = iPressed;
 		
 		// ambient light orbiting
 		angle_to_rot_matrix_y(speed * t, rotMat);
@@ -435,7 +455,8 @@ int main(){
 
 		glUniformMatrix3fv(pbrEnvRotationLoc, 1, GL_FALSE, rotMat);
 
-
+		glUniform1f(pbrDirectLightLoc, directLightOn ? 1.0f : 0.0f);
+		glUniform1f(pbrIBLLoc, iblOn ? 1.0f : 0.0f);
 		
 		glUniform1f(pbrMetallicLoc, metallic);   // M-key slider
 
