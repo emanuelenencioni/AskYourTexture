@@ -19,6 +19,7 @@ add_executable(AskYourTexture
     src/ibl.cpp
     src/sphere.cpp
     src/showcase.cpp
+    src/wall.cpp
 )
 
 target_include_directories(AskYourTexture PRIVATE include)

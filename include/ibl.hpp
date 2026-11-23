@@ -26,6 +26,7 @@ public:
     unsigned int getPrefilterMap() const { return prefilterMap; }
     unsigned int getBRDFLUT() const { return brdfLUTTexture; }
     int loadHDR(const std::string& path);
+    void drawSkybox(unsigned int skyboxProgram, const float* view, const float* projection, const float* rotMat); 
 
 private:
     std::string hdrPath;
@@ -45,6 +46,9 @@ private:
     unsigned int quadVAO;
     unsigned int quadVBO;
 
+    unsigned int cubeVAO;
+    unsigned int cubeVBO;
+
     // internal shader programs
     unsigned int equiProgram;
     unsigned int irradianceProgram;
@@ -62,6 +66,8 @@ private:
     void setupQuad();
     void renderQuad();
 
+    void setupCube();
+    void renderCube();
 };
 
 extern const char* fragmentEquirectangular;

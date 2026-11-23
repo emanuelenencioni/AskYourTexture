@@ -7,7 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 
-enum class ShowcaseMode { Sphere = 0, Cube = 1, FloorOnly = 2 };
+enum class ShowcaseMode { Sphere = 0, Cube = 1, FloorOnly = 2, Wall = 3 };
 
 class ShowcaseController {
 public:

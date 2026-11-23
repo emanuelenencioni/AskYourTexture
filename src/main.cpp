@@ -9,6 +9,7 @@
 
 #include "cube.hpp"
 #include "sphere.hpp"
+#include "wall.hpp"
 
 #include "shadow.hpp"
 #include "stb_image.h"
@@ -70,6 +71,9 @@ int main(){
 
 	Sphere sphere;
 	sphere.setupGL();
+
+	Wall wall;
+	wall.setupGL();
 
 
 	float floorVertices[] = { // FLOOR
@@ -400,6 +404,8 @@ int main(){
 			showcase.requestMode(ShowcaseMode::Cube);
 		if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
 			showcase.requestMode(ShowcaseMode::FloorOnly);
+		if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+			showcase.requestMode(ShowcaseMode::Wall);
 
 		
 
@@ -460,16 +466,21 @@ int main(){
 		
 		glUniform1f(pbrMetallicLoc, metallic);   // M-key slider
 
-		glUniformMatrix4fv(pbrModelLoc,1,GL_FALSE,modelSphere);
-		
-
 		glm::mat4 showcaseModel = showcase.getModelMatrix();
 		glUniformMatrix4fv(pbrModelLoc, 1, GL_FALSE, glm::value_ptr(showcaseModel));
 
-		if (showcase.getActiveMode() == ShowcaseMode::Sphere) {
-			sphere.draw();
-		} else if (showcase.getActiveMode() == ShowcaseMode::Cube) {
-			cube.draw();
+		switch (showcase.getActiveMode()) {
+			case ShowcaseMode::Sphere:
+				sphere.draw();
+				break;
+			case ShowcaseMode::Cube:
+				cube.draw();
+				break;
+			case ShowcaseMode::Wall:
+				wall.draw();
+				break;
+			case ShowcaseMode::FloorOnly:
+				break;
 		}
 		
 		glUniformMatrix4fv(pbrVpLoc, 1, GL_FALSE, viewProjection);
@@ -493,21 +504,8 @@ int main(){
 
 
 		// Skybox
-		glDepthFunc(GL_LEQUAL); // let depth == 1.0 pass
-		glUseProgram(skyboxProgram);
-		glUniformMatrix4fv(skyProjLoc, 1, GL_FALSE, projection);
-		glUniformMatrix4fv(skyViewLoc, 1, GL_FALSE, view);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, ibl.getEnvCubemap());
-		glUniform1i(skyMapLoc, 0);
-
-		glUniformMatrix3fv(skyEnvRotationLoc, 1, GL_FALSE, rotMat);
-
-
-		cube.draw();
-
-		glDepthFunc(GL_LESS); // restore standard depth testing
+		
+		ibl.drawSkybox(skyboxProgram, view, projection, rotMat);
 		
 		//glUniform1f(gammaLoc, gammaOn ? 1.0f : 0.0f);      // for shaderProgram users (cube/shadow)
 
