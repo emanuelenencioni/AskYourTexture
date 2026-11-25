@@ -20,6 +20,7 @@ add_executable(AskYourTexture
     src/sphere.cpp
     src/showcase.cpp
     src/wall.cpp
+    src/material.cpp
 )
 
 target_include_directories(AskYourTexture PRIVATE include)

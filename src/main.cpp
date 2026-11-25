@@ -19,6 +19,7 @@
 #include "opengl_utils.hpp"
 #include "ibl.hpp"
 #include "showcase.hpp"
+#include "material.hpp"
 
 
 #define ROTATING_SUN 0
@@ -280,16 +281,8 @@ int main(){
 	shad.setupGL();
 
 	// textures!
-	std::string imagePath = "../Ground108_4K-PNG/Ground108_4K-PNG_Color.png"; // relative to the executable
-	std::string normalPath = "../Ground108_4K-PNG/Ground108_4K-PNG_NormalGL.png";
-	int idTexture = loadTexture(imagePath);
-	int idNormal = loadTexture(normalPath);
-
-	std::string roughnessPath = "../Ground108_4K-PNG/Ground108_4K-PNG_Roughness.png";
-	std::string aoPath = "../Ground108_4K-PNG/Ground108_4K-PNG_AmbientOcclusion.png";
-	int idRoughness = loadTexture(roughnessPath);
-	int idAO = loadTexture(aoPath);
-
+	std::string materialPath = "../Ground108_4K-PNG/"; // relative to the executable
+	PBRMaterial material = PBRMaterial(materialPath);
 	//camera!
 	float camPos[3] = {7.88,1.39,0};
 
@@ -338,6 +331,10 @@ int main(){
 	GLint skyEnvRotationLoc = glGetUniformLocation(skyboxProgram, "uEnvRotation");
 
 	float rotMat[9];
+
+	bool rWasPressed = false;
+
+	bool gPressed, tPressed, lPressed, iPressed, rPressed;
 	// loop
 	while(!glfwWindowShouldClose(window)){
 		glBindFramebuffer(GL_FRAMEBUFFER, fboHDR); // HDR
@@ -351,12 +348,11 @@ int main(){
 		showcase.update(dt);
 
 // ----- INPUT HANDLING -----
-		bool gPressed = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
-		bool tPressed = glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS;
-		bool lPressed = glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS;
-		bool iPressed = glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS;
-
-
+		gPressed = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
+		tPressed = glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS;
+		lPressed = glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS;
+		iPressed = glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS;
+		rPressed = glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS;
 
 		if(gPressed && !gWasPressed){
 			gammaOn = !gammaOn;
@@ -377,6 +373,11 @@ int main(){
 			iblOn = !iblOn;
 		}
 		iWasPressed = iPressed;
+
+		if(rPressed && !rWasPressed){
+			material.reload();
+		}
+		rWasPressed = rPressed;
 		
 		// ambient light orbiting
 		angle_to_rot_matrix_y(speed * t, rotMat);
@@ -407,6 +408,8 @@ int main(){
 		if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
 			showcase.requestMode(ShowcaseMode::Wall);
 
+
+
 		
 
 		cam.getViewMatrix(view);
@@ -435,17 +438,8 @@ int main(){
 		
 		glUseProgram(pbrProgram);
 		// texture
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, idTexture);
-		// normal mapping
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, idNormal);
-		// roughness
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, idRoughness);
-		// AO
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, idAO);
+		material.bind();
+		
 
 		// binding irradiance map to floor too
 		glActiveTexture(GL_TEXTURE4);
